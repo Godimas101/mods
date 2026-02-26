@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <EntityComponents>
+    <EntityComponent xsi:type="MyObjectBuilder_InventoryComponentDefinition">
+      <Id>
+        <TypeId>Inventory</TypeId>
+        <SubtypeId>LargeBlockLargeIndustrialContainer</SubtypeId>
+      </Id>
+      <Size x="7.5" y="7.5" z="15" /> <!-- Inventory for cargo cans is based on internal physical size. x2 the Z axis X2 the inventory -->
+    </EntityComponent>
+  </EntityComponents>
+</Definitions>

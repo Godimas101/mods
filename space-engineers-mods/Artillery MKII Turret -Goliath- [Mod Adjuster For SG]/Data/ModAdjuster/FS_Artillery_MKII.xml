@@ -1,0 +1,119 @@
+﻿
+<?xml version="1.0" ?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<CubeBlocks>
+
+
+   <Definition xsi:type="MyObjectBuilder_LargeTurretBaseDefinition">
+            <Id>
+                <TypeId>LargeMissileTurret</TypeId>
+                <SubtypeId>Artillery_MKII</SubtypeId>
+            </Id>
+            <DisplayName>Prototech Artillery Turret</DisplayName> <!-- Updated name -->
+            <Description>The Goliath Artillery turret is the next evolution from its smaller Titanic series sibling. Offering higher explosive damage, greater firing range, and an additional barrel for a 3 round salvo.</Description>
+            <CubeSize>Large</CubeSize>
+            <GuiVisible>false</GuiVisible>
+            <PlaceDecals>false</PlaceDecals>
+            <BlockTopology>TriangleMesh</BlockTopology>
+			<Size x="5" y="3" z="5"/>
+            <ModelOffset x="0" y="0" z="0" />
+
+            <Components>
+                <Component Subtype="SteelPlate" Count="200" />
+                <Component Subtype="Construction" Count="400" />
+			<!-- <Component Subtype="PrototechPanel" Count="10" /> --> <!-- Additional cost -->
+                <Component Subtype="MetalGrid" Count="80" />
+                <Component Subtype="LargeTube" Count="80" />
+                <Component Subtype="Motor" Count="60" />
+			<!-- 	<Component Subtype="PrototechMachinery" Count="5" >
+					<DeconstructId>
+						<TypeId>Ingot</TypeId>
+						<SubtypeId>PrototechScrap</SubtypeId>
+					</DeconstructId>
+				</Component> -->
+                <Component Subtype="Girder" Count="40" />
+                <Component Subtype="Computer" Count="40" />
+                <Component Subtype="Construction" Count="100" />
+                <Component Subtype="SteelPlate" Count="400" />
+				<!--<Component Subtype="PrototechFrame" Count="1" >
+					<DeconstructId>
+						<TypeId>Ingot</TypeId>
+						<SubtypeId>PrototechScrap</SubtypeId>
+					</DeconstructId>
+				</Component> -->
+            </Components>
+            <!-- <CriticalComponent Subtype="PrototechFrame" Index="0" /> -->
+            <CriticalComponent Subtype="Computer" Index="0" />
+            <MountPoints>
+				<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="5.00" EndY="5.00"/>
+            </MountPoints>
+            <BuildProgressModels>
+
+            </BuildProgressModels>
+            <VoxelPlacement>
+                <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
+                <StaticMode>
+                    <PlacementMode>OutsideVoxel</PlacementMode>
+                    <MaxAllowed>0.2</MaxAllowed>
+                    <MinAllowed>0</MinAllowed>
+                </StaticMode>
+                <DynamicMode>
+                    <PlacementMode>OutsideVoxel</PlacementMode>
+                    <MaxAllowed>0.2</MaxAllowed>
+                    <MinAllowed>0.01</MinAllowed>
+                </DynamicMode>
+            </VoxelPlacement>
+            <BlockPairName>Artillery_MKII</BlockPairName>
+            <MirroringY>Z</MirroringY>
+            <MirroringZ>Y</MirroringZ>
+            <EdgeType>Light</EdgeType>
+            <BuildTimeSeconds>100</BuildTimeSeconds>
+
+            <WeaponDefinitionId Subtype="Artillery_MKII" />
+            <EnabledTargetingOptions>SmallShips LargeShips Stations Enemies</EnabledTargetingOptions>
+            <HiddenTargetingOptions>Players Asteroids Missiles Friends</HiddenTargetingOptions>
+            <InventoryMaxVolume>0.6</InventoryMaxVolume>
+            <DamageEffectName>Damage_WeapExpl_Damaged</DamageEffectName>
+            <DamagedSound>ParticleWeapExpl</DamagedSound>
+            <ResourceSinkGroup>Defense</ResourceSinkGroup>
+            <MinElevationDegrees>-5</MinElevationDegrees>
+            <MaxElevationDegrees>35</MaxElevationDegrees>
+            <MinAzimuthDegrees>-180</MinAzimuthDegrees>
+            <MaxAzimuthDegrees>180</MaxAzimuthDegrees>
+            <IdleRotation>false</IdleRotation>
+            <MaxRangeMeters>5000</MaxRangeMeters>
+            <RotationSpeed>0.00025</RotationSpeed>
+            <ElevationSpeed>0.00025 </ElevationSpeed>
+            <EmissiveColorPreset>Default</EmissiveColorPreset>
+            <MinFov>0.1</MinFov>
+            <MaxFov>1.04719755</MaxFov>
+            <DestroyEffect>BlockDestroyedExplosion_Large</DestroyEffect>
+            <DestroySound>WepSmallWarheadExpl</DestroySound>
+            <PCU>275</PCU>
+            <IsAirTight>false</IsAirTight>
+            <AmmoPullAmountPerTick>3</AmmoPullAmountPerTick>
+            <InventoryFillFactorMin>.25</InventoryFillFactorMin>
+            <InventoryFillFactorMax>.5</InventoryFillFactorMax>
+            <TieredUpdateTimes>
+                <unsignedInt>10</unsignedInt>
+                <unsignedInt>0</unsignedInt>
+            </TieredUpdateTimes>
+            <TargetingGroups>
+                <string>Weapons</string>
+            </TargetingGroups>
+            <UpCameraOffset>1.0</UpCameraOffset>
+            <ForwardCameraOffset>0.5</ForwardCameraOffset>
+            <AimingOffset>
+                <X>0</X>
+                <Y>-2</Y>
+                <Z>0</Z>
+            </AimingOffset>
+        </Definition>
+
+
+
+
+
+
+	</CubeBlocks>
+</Definitions>

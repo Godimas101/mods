@@ -1,0 +1,793 @@
+using Sandbox.Definitions;
+using Sandbox.Game.Entities;
+using Sandbox.Game.EntityComponents;
+using Sandbox.Game.GameSystems.TextSurfaceScripts;
+using Sandbox.ModAPI;
+using SpaceEngineers.Game.ModAPI;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using VRage.Game;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
+using VRage.Game.ModAPI.Ingame.Utilities;
+using VRage.Utils;
+using VRageMath;
+
+namespace MahrianeIndustries.LCDInfo
+{
+    [MyTextSurfaceScript("LCDInfoScreenItemsSummary", "$IOS LCD - Items")]
+    public class LCDItemsSummaryInfo : MyTextSurfaceScriptBase
+    {
+        MyIni config = new MyIni();
+
+        public static string CONFIG_SECTION_ID = "SettingsItemsSummary";
+
+        // The IMyInventoryItem.Type.TypeIds this Script is looking for.
+        List<string> item_types = new List<string>
+        {
+            "PhysicalGunObject",
+            "OxygenContainerObject",
+            "GasContainerObject",
+            "PhysicalObject",
+            "ConsumableItem",
+            "Package",
+            "SeedItem"
+        };
+
+        void TryCreateSurfaceData()
+        {
+            if (surfaceData != null)
+                return;
+
+            compactMode = mySurface.SurfaceSize.X / mySurface.SurfaceSize.Y > 4;
+            var textSize = compactMode ? .6f : .4f;
+
+            // Initialize surface settings
+            surfaceData = new SurfaceDrawer.SurfaceData
+            {
+                surface = mySurface,
+                textSize = textSize,
+                titleOffset = 280,
+                ratioOffset = 82,
+                viewPortOffsetX = compactMode ? 10 : 20,
+                viewPortOffsetY = compactMode ? 5 : 10,
+                newLine = new Vector2(0, 30 * textSize),
+                showHeader = true,
+                showSummary = true,
+                showMissing = false,
+                showRatio = false,
+                showBars = true,
+                showSubgrids = false,
+                showDocked = false,
+                useColors = true,
+                showTool = true,
+                showRifle = true,
+                showPistol = true,
+                showLauncher = true,
+                showKit = true,
+                showMisc = true,
+                showBottle = true,
+                showRawFood = true,
+                showCookedFood = true,
+                showDrink = true,
+                showSeed = true
+            };
+        }
+
+        void CreateConfig()
+        {
+            TryCreateSurfaceData();
+
+            config.Clear();
+
+            // Build custom formatted config with section headers
+            StringBuilder sb = new StringBuilder();
+            
+            // Preserve existing CustomData from other sections only (not our config section)
+            string existing = myTerminalBlock.CustomData ?? "";
+            if (!string.IsNullOrWhiteSpace(existing))
+            {
+                // Manually remove our section while preserving all other content (including comments)
+                string[] lines = existing.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                bool inOurSection = false;
+                bool addedOtherContent = false;
+                
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i];
+                    string trimmed = line.Trim();
+                    
+                    // Check if this is a section header
+                    if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                    {
+                        string sectionName = trimmed.Substring(1, trimmed.Length - 2);
+                        inOurSection = (sectionName == CONFIG_SECTION_ID);
+                        
+                        // If not our section, add it
+                        if (!inOurSection)
+                        {
+                            if (addedOtherContent) sb.AppendLine(); // blank line before new section
+                            sb.AppendLine(line);
+                            addedOtherContent = true;
+                        }
+                    }
+                    else if (!inOurSection && addedOtherContent)
+                    {
+                        // Add any line that's not in our section
+                        sb.AppendLine(line);
+                    }
+                    else if (!inOurSection && !string.IsNullOrWhiteSpace(trimmed))
+                    {
+                        // First non-empty line before any section
+                        sb.AppendLine(line);
+                        addedOtherContent = true;
+                    }
+                }
+                
+                // Add blank line separator if we preserved other content
+                if (addedOtherContent)
+                    sb.AppendLine();
+            }
+
+            sb.AppendLine($"[{CONFIG_SECTION_ID}]");
+            sb.AppendLine();
+            sb.AppendLine("; [ ITEMS - GENERAL OPTIONS ]");
+            sb.AppendLine("SearchId=*");
+            sb.AppendLine("ExcludeIds=");
+            sb.AppendLine($"ShowHeader={surfaceData.showHeader}");
+            sb.AppendLine($"ShowSummary={surfaceData.showSummary}");
+            sb.AppendLine($"ShowMissing={surfaceData.showMissing}");
+            sb.AppendLine($"ShowRatio={surfaceData.showRatio}");
+            sb.AppendLine($"ShowBars={surfaceData.showBars}");
+            sb.AppendLine($"ShowSubgrids={surfaceData.showSubgrids}");
+            sb.AppendLine($"SubgridUpdateFrequency={surfaceData.subgridUpdateFrequency}");
+            sb.AppendLine("; Subgrid scan frequency: 1=fastest (60/sec), 10=normal (6/sec), 100=slowest (0.6/sec)");
+            sb.AppendLine($"ShowDocked={surfaceData.showDocked}");
+            sb.AppendLine($"UseColors={surfaceData.useColors}");
+
+            sb.AppendLine();
+            sb.AppendLine("; [ ITEMS - LAYOUT OPTIONS ]");
+            sb.AppendLine($"TextSize={surfaceData.textSize}");
+            sb.AppendLine($"ViewPortOffsetX={surfaceData.viewPortOffsetX}");
+            sb.AppendLine($"ViewPortOffsetY={surfaceData.viewPortOffsetY}");
+            sb.AppendLine($"TitleFieldWidth={surfaceData.titleOffset}");
+            sb.AppendLine($"RatioFieldWidth={surfaceData.ratioOffset}");
+
+            sb.AppendLine();
+            sb.AppendLine("; [ ITEMS - SCREEN OPTIONS ]");
+            sb.AppendLine($"showTool={surfaceData.showTool}");
+            sb.AppendLine($"showRifle={surfaceData.showRifle}");
+            sb.AppendLine($"showPistol={surfaceData.showPistol}");
+            sb.AppendLine($"showLauncher={surfaceData.showLauncher}");
+            sb.AppendLine($"showKit={surfaceData.showKit}");
+            sb.AppendLine($"showMisc={surfaceData.showMisc}");
+            sb.AppendLine($"showBottle={surfaceData.showBottle}");
+            sb.AppendLine($"showRawFood={surfaceData.showRawFood}");
+            sb.AppendLine($"showCookedFood={surfaceData.showCookedFood}");
+            sb.AppendLine($"showDrink={surfaceData.showDrink}");
+            sb.AppendLine($"showSeed={surfaceData.showSeed}");
+            sb.AppendLine($"UseSubtypeId={surfaceData.useSubtypeId}");
+
+            sb.AppendLine();
+            sb.AppendLine("; [ ITEMS - ITEM THRESHOLDS ]");
+
+            CreateCargoItemDefinitionList();
+
+            foreach (CargoItemDefinition itemDefinition in itemDefinitions)
+            {
+                // Use typeId_subtypeId format to avoid duplicate keys (e.g., ConsumableItem_Fruit vs SeedItem_Fruit)
+                string configKey = $"{itemDefinition.typeId}_{itemDefinition.subtypeId}";
+                sb.AppendLine($"{configKey}={itemDefinition.minAmount}");
+            }
+
+            foreach (CargoItemDefinition itemDefinition in unknownItemDefinitions)
+            {
+                string configKey = $"{itemDefinition.typeId}_{itemDefinition.subtypeId}";
+                sb.AppendLine($"{configKey}={itemDefinition.minAmount}");
+            }
+
+            sb.AppendLine();
+
+            myTerminalBlock.CustomData = sb.ToString();
+        }
+
+        void LoadConfig()
+        {
+            try
+            {
+                configError = false;
+                MyIniParseResult result;
+                TryCreateSurfaceData();
+
+                if (config.TryParse(myTerminalBlock.CustomData, CONFIG_SECTION_ID, out result))
+                {
+
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowHeader", ref surfaceData.showHeader, ref configError);
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowSummary", ref surfaceData.showSummary, ref configError);
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowMissing", ref surfaceData.showMissing, ref configError);
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowRatio", ref surfaceData.showRatio, ref configError);
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowBars", ref surfaceData.showBars, ref configError);
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowSubgrids", ref surfaceData.showSubgrids, ref configError);
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "SubgridUpdateFrequency")) surfaceData.subgridUpdateFrequency = config.Get(CONFIG_SECTION_ID, "SubgridUpdateFrequency").ToInt32();
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "ShowDocked", ref surfaceData.showDocked, ref configError);
+
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "TextSize"))
+                        surfaceData.textSize = config.Get(CONFIG_SECTION_ID, "TextSize").ToSingle(defaultValue: 1.0f);
+                    else
+                        configError = true;
+
+                    MahUtillities.TryGetConfigFloat(config, CONFIG_SECTION_ID, "TitleFieldWidth", ref surfaceData.titleOffset, ref configError);
+                    MahUtillities.TryGetConfigFloat(config, CONFIG_SECTION_ID, "RatioFieldWidth", ref surfaceData.ratioOffset, ref configError);
+                    MahUtillities.TryGetConfigFloat(config, CONFIG_SECTION_ID, "ViewPortOffsetX", ref surfaceData.viewPortOffsetX, ref configError);
+                    MahUtillities.TryGetConfigFloat(config, CONFIG_SECTION_ID, "ViewPortOffsetY", ref surfaceData.viewPortOffsetY, ref configError);
+
+                    MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "UseColors", ref surfaceData.useColors, ref configError);
+                    
+                    // UseSubtypeId is optional for backward compatibility
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "UseSubtypeId"))
+                        surfaceData.useSubtypeId = config.Get(CONFIG_SECTION_ID, "UseSubtypeId").ToBoolean();
+
+                    // Items category toggles (optional; default true)
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showTool")) 
+                    {
+                        surfaceData.showTool = config.Get(CONFIG_SECTION_ID, "showTool").ToBoolean();
+                    }
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showRifle"))
+                    {
+                        surfaceData.showRifle = config.Get(CONFIG_SECTION_ID, "showRifle").ToBoolean();
+                    }
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showPistol")) surfaceData.showPistol = config.Get(CONFIG_SECTION_ID, "showPistol").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showLauncher")) surfaceData.showLauncher = config.Get(CONFIG_SECTION_ID, "showLauncher").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showKit")) surfaceData.showKit = config.Get(CONFIG_SECTION_ID, "showKit").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showMisc")) surfaceData.showMisc = config.Get(CONFIG_SECTION_ID, "showMisc").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showBottle")) surfaceData.showBottle = config.Get(CONFIG_SECTION_ID, "showBottle").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showRawFood")) surfaceData.showRawFood = config.Get(CONFIG_SECTION_ID, "showRawFood").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showCookedFood")) surfaceData.showCookedFood = config.Get(CONFIG_SECTION_ID, "showCookedFood").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showDrink")) surfaceData.showDrink = config.Get(CONFIG_SECTION_ID, "showDrink").ToBoolean();
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "showSeed")) surfaceData.showSeed = config.Get(CONFIG_SECTION_ID, "showSeed").ToBoolean();
+
+                    surfaceData.newLine = new Vector2(0, 30 * surfaceData.textSize);
+
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "SearchId"))
+                    {
+                        searchId = config.Get(CONFIG_SECTION_ID, "SearchId").ToString();
+                        searchId = string.IsNullOrWhiteSpace(searchId) ? "*" : searchId;
+                    }
+                    else
+                        configError = true;
+
+                    CreateExcludeIdsList();
+
+                    // Is Corner LCD?
+                    if (compactMode)
+                    {
+                        surfaceData.showHeader = true;
+                        surfaceData.showSummary = true;
+                        surfaceData.textSize = 0.6f;
+                        surfaceData.titleOffset = 200;
+                        surfaceData.viewPortOffsetX = 10;
+                        surfaceData.viewPortOffsetY = 5;
+                        surfaceData.newLine = new Vector2(0, 30 * surfaceData.textSize);
+                    }
+                }
+                else
+                {
+                    MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Config Syntax error at Line {result}");
+                }
+
+                CreateCargoItemDefinitionList();
+
+                // Check Items config - support both old (subtypeId only) and new (typeId_subtypeId) formats
+                foreach (CargoItemDefinition definition in itemDefinitions)
+                {
+                    string newKey = $"{definition.typeId}_{definition.subtypeId}";
+                    string oldKey = definition.subtypeId;
+                    
+                    if (config.ContainsKey(CONFIG_SECTION_ID, newKey))
+                        definition.minAmount = config.Get(CONFIG_SECTION_ID, newKey).ToInt32();
+                    else if (config.ContainsKey(CONFIG_SECTION_ID, oldKey))
+                        definition.minAmount = config.Get(CONFIG_SECTION_ID, oldKey).ToInt32();
+                }
+
+                // Check unknownItems config
+                foreach (CargoItemDefinition definition in unknownItemDefinitions)
+                {
+                    string newKey = $"{definition.typeId}_{definition.subtypeId}";
+                    string oldKey = definition.subtypeId;
+                    
+                    if (config.ContainsKey(CONFIG_SECTION_ID, newKey))
+                        definition.minAmount = config.Get(CONFIG_SECTION_ID, newKey).ToInt32();
+                    else if (config.ContainsKey(CONFIG_SECTION_ID, oldKey))
+                        definition.minAmount = config.Get(CONFIG_SECTION_ID, oldKey).ToInt32();
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Caught Exception while loading config: {e.ToString()}");
+            }
+        }
+
+        void CreateExcludeIdsList()
+        {
+            if (!config.ContainsKey(CONFIG_SECTION_ID, "ExcludeIds")) return;
+
+            string[] exclude = config.Get(CONFIG_SECTION_ID, "ExcludeIds").ToString().Split(',');
+            excludeIds.Clear();
+            minVisibleAmount = 0;
+
+            foreach (string s in exclude)
+            {
+                string t = s.Trim();
+
+                if (t.Contains("<"))
+                {
+                    t = t.Replace("<", "").Trim();
+                    int.TryParse(t, out minVisibleAmount);
+                    continue;
+                }
+
+                if (String.IsNullOrEmpty(t) || t == "*" || t == "" || t.Length < 3) continue;
+
+                excludeIds.Add(t);
+            }
+        }
+
+        void CreateCargoItemDefinitionList()
+        {
+            itemDefinitions.Clear();
+
+            foreach (CargoItemDefinition definition in MahDefinitions.cargoItemDefinitions)
+            {
+                // Include standard Items categories, plus special-case ZoneChip (Component) for display on Items screen
+                if (item_types.Contains(definition.typeId) || (definition.typeId == "Component" && definition.subtypeId == "ZoneChip"))
+                {
+                    int minAmount = config.ContainsKey(CONFIG_SECTION_ID, definition.subtypeId) ? (int)config.Get(CONFIG_SECTION_ID, definition.subtypeId).ToInt64() : definition.minAmount;
+                    
+                    itemDefinitions.Add(new CargoItemDefinition { typeId = definition.typeId, subtypeId = definition.subtypeId, displayName = definition.displayName, volume = definition.volume, minAmount = minAmount, sortId = definition.sortId });
+                }
+            }
+
+            foreach (CargoItemDefinition definition in unknownItemDefinitions)
+            {
+                if (item_types.Contains(definition.typeId))
+                {
+                    int minAmount = config.ContainsKey(CONFIG_SECTION_ID, definition.subtypeId) ? (int)config.Get(CONFIG_SECTION_ID, definition.subtypeId).ToInt64() : definition.minAmount;
+                    itemDefinitions.Add(new CargoItemDefinition { typeId = definition.typeId, subtypeId = definition.subtypeId, displayName = definition.displayName, volume = definition.volume, minAmount = minAmount, sortId = definition.sortId });
+                }
+            }
+        }
+
+        IMyTextSurface mySurface;
+        IMyTerminalBlock myTerminalBlock;
+
+        List<string> excludeIds = new List<string>();
+        List<CargoItemDefinition> itemDefinitions = new List<CargoItemDefinition>();
+        List<CargoItemDefinition> unknownItemDefinitions = new List<CargoItemDefinition>();
+        List<IMyInventory> inventories = new List<IMyInventory>();
+        List<VRage.Game.ModAPI.Ingame.MyInventoryItem> inventoryItems = new List<VRage.Game.ModAPI.Ingame.MyInventoryItem>();
+        
+        // Cached subgrid inventories (persisted between main grid scans)
+        List<IMyInventory> subgridInventories = new List<IMyInventory>();
+
+        Dictionary<string, CargoItemType> cargo = new Dictionary<string, CargoItemType>();
+
+        VRage.Collections.DictionaryValuesReader<MyDefinitionId, MyDefinitionBase> myDefinitions;
+        MyDefinitionId myDefinitionId;
+        SurfaceDrawer.SurfaceData surfaceData;
+        string searchId = "";
+        string gridId = "Unknown grid";
+        int minVisibleAmount = 0;
+        int subgridScanTick = 0;
+        bool configError = false;
+        bool compactMode = false;
+        bool isStation = false;
+        Sandbox.ModAPI.Ingame.MyShipMass gridMass;
+
+        public LCDItemsSummaryInfo(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        {
+            mySurface = surface;
+            myTerminalBlock = block as IMyTerminalBlock;
+        }
+
+        public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
+
+        public override void Dispose()
+        {
+
+        }
+
+        public override void Run()
+        {
+            // Prevent execution on a dedicated server to avoid server-side load
+            if (Sandbox.ModAPI.MyAPIGateway.Utilities?.IsDedicated ?? false)
+                return;
+
+            MahDefinitions.LoadExternalItems();
+            
+            // Clear unknown definitions at start of each run to prevent stale fallback definitions
+            unknownItemDefinitions.Clear();
+            
+            if (myTerminalBlock.CustomData.Length <= 0 || !myTerminalBlock.CustomData.Contains(CONFIG_SECTION_ID))
+                CreateConfig();
+
+            LoadConfig();
+
+            UpdateInventories();
+            UpdateContents();
+
+            var myFrame = mySurface.DrawFrame();
+            var myViewport = new RectangleF((mySurface.TextureSize - mySurface.SurfaceSize) / 2f, mySurface.SurfaceSize);
+            var myPosition = new Vector2(surfaceData.viewPortOffsetX, surfaceData.viewPortOffsetY) + myViewport.Position;
+            myDefinitions = MyDefinitionManager.Static.GetAllDefinitions();
+
+            if (configError)
+                SurfaceDrawer.DrawErrorSprite(ref myFrame, surfaceData, $"<< Config error. Please Delete CustomData >>", Color.Orange);
+            else
+                DrawMainSprite(ref myFrame, ref myPosition);
+
+            myFrame.Dispose();
+        }
+
+        void UpdateInventories()
+        {
+            try
+            {
+                // Determine if we should scan subgrids this cycle
+                bool scanSubgrids = false;
+                if (surfaceData.showSubgrids)
+                {
+                    subgridScanTick++;
+                    if (subgridScanTick >= surfaceData.subgridUpdateFrequency / 10)
+                    {
+                        subgridScanTick = 0;
+                        scanSubgrids = true;
+                    }
+                }
+
+                inventories.Clear();
+
+                var myCubeGrid = myTerminalBlock.CubeGrid as MyCubeGrid;
+
+                if (myCubeGrid == null) return;
+
+                IMyCubeGrid cubeGrid = myCubeGrid as IMyCubeGrid;
+                isStation = cubeGrid.IsStatic;
+                gridId = cubeGrid.CustomName;
+
+                // Always get main grid inventories
+                var mainInventories = MahUtillities.GetInventories(myCubeGrid, searchId, excludeIds, ref gridMass, false, surfaceData.showDocked);
+                inventories.AddRange(mainInventories);
+                
+                // Periodically update subgrid cache
+                if (scanSubgrids)
+                {
+                    var allInventories = MahUtillities.GetInventories(myCubeGrid, searchId, excludeIds, ref gridMass, true, surfaceData.showDocked);
+                    subgridInventories.Clear();
+                    
+                    // Extract subgrid-only inventories
+                    foreach (var inv in allInventories)
+                        if (!mainInventories.Contains(inv))
+                            subgridInventories.Add(inv);
+                }
+                
+                // Merge cached subgrid inventories
+                inventories.AddRange(subgridInventories);
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Caught Exception while updating inventories: {e.ToString()}");
+            }
+        }
+
+        void UpdateContents()
+        {
+            try
+            {
+                cargo.Clear();
+
+                foreach (var inventory in inventories)
+                {
+                    if (inventory == null) continue;
+                    if (inventory.ItemCount == 0)
+                        continue;
+
+                    inventoryItems.Clear();
+                    inventory.GetItems(inventoryItems);
+
+                    // Use centralized sorting utility (currently SubtypeId, extensible for future modes)
+                    foreach (var item in MahSorting.SortItems(inventoryItems, MahSorting.ItemSortMode.SubtypeId))
+                    {
+                        if (item == null) continue;
+
+                        var typeId = item.Type.TypeId.Split('_')[1];
+                        var subtypeId = item.Type.SubtypeId;
+                        var currentAmount = item.Amount.ToIntSafe();
+
+                        // Standard Items categories OR special-case ZoneChip (a Component that we also want to show on the Items screen)
+                        bool includeItem = item_types.Contains(typeId) || (typeId == "Component" && subtypeId == "ZoneChip");
+
+                        if (includeItem)
+                        {
+                            if (!cargo.ContainsKey(subtypeId))
+                            {
+                                cargo.Add(subtypeId, new CargoItemType { item = item, amount = currentAmount });
+                                CargoItemDefinition itemDefinition = FindCargoItemDefinition(typeId, subtypeId);
+
+                                if (itemDefinition == null)
+                                {
+                                    itemDefinition = new CargoItemDefinition();
+                                    itemDefinition.typeId = typeId;
+                                    itemDefinition.subtypeId = subtypeId;
+                                    itemDefinition.displayName = subtypeId.Length >= 15 ? subtypeId.Substring(0, 15) : subtypeId;
+                                    itemDefinition.volume = .1f;
+                                    itemDefinition.minAmount = 1000;
+                                    itemDefinition.sortId = "misc"; // default category
+
+                                    itemDefinitions.Add(itemDefinition);
+                                    unknownItemDefinitions.Add(itemDefinition);
+                                }
+
+                                cargo[subtypeId].definition = itemDefinition;
+                            }
+                            else
+                            {
+                                cargo[subtypeId].amount += currentAmount;
+                            }
+
+                            cargo[subtypeId].item = item;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Caught Exception while updating contents: {e.ToString()}");
+            }
+        }
+
+        void DrawMainSprite(ref MySpriteDrawFrame frame, ref Vector2 position)
+        {
+            try
+            {
+                double total = 0;
+                double current = 0;
+
+                // Total Cargo
+                foreach (IMyInventory inventory in inventories)
+                {
+                    if (inventory == null) continue;
+
+                    total += (double)inventory.MaxVolume;
+                    current += (double)inventory.CurrentVolume;
+                }
+
+                if (surfaceData.showHeader)
+                {
+                    SurfaceDrawer.DrawHeader(ref frame, ref position, surfaceData, $"Items [{cargo.Count}/{itemDefinitions.Count}/{unknownItemDefinitions.Count}/{inventories.Count}]:");
+                    if (compactMode) position -= 2 * surfaceData.newLine;
+                }
+
+                if (surfaceData.showSummary)
+                {
+                    if (!compactMode)
+                    {
+                        string filterTag = GetFilterTag();
+                        SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Summary [{(searchId == "*" ? "All" : searchId)} -{excludeIds.Count}] {filterTag} >> ({inventories.Count})", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                        position += surfaceData.newLine;
+                    }
+                    position += surfaceData.newLine;
+                    SurfaceDrawer.DrawBar(ref frame, ref position, surfaceData, "Total", current, total, Unit.Percent, false, false);
+
+                    // Total Volume
+                    double volume = 0;
+
+                    foreach (var item in cargo)
+                    {
+                        volume += item.Value.amount * item.Value.definition.volume;
+                    }
+
+                    volume /= 1000;
+                    SurfaceDrawer.DrawBar(ref frame, ref position, surfaceData, "Items", volume, total, Unit.Percent, false, true);
+                    position += surfaceData.newLine;
+                }
+
+                // If this is a corner LCD, no more data will be visible.
+                if (compactMode) return;
+
+                if (surfaceData.showMissing)
+                {
+                    DrawAllKnownSprite(ref frame, ref position);
+                }
+                else
+                {
+                    DrawAllAvailableSprite(ref frame, ref position);
+                }
+
+                position += surfaceData.newLine;
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Caught Exception while DrawMainSprite: {e.ToString()}");
+            }
+        }
+
+        void DrawAllKnownSprite(ref MySpriteDrawFrame frame, ref Vector2 position)
+        {
+            try
+            {
+                SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Id [Items]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, "Available", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
+
+                position += surfaceData.newLine;
+
+                var sortedItemDefinitions = surfaceData.useSubtypeId
+                    ? itemDefinitions.OrderBy(d => d.subtypeId)
+                    : itemDefinitions.OrderBy(d => d.displayName);
+
+                foreach (var itemDefinition in sortedItemDefinitions)
+                {
+                    if (itemDefinition == null) continue;
+                    
+                    if (!CategoryEnabled(itemDefinition.sortId)) continue;
+                    if (IgnoreDefinition(itemDefinition)) continue;
+
+                    string displayText = surfaceData.useSubtypeId ? itemDefinition.subtypeId : itemDefinition.displayName;
+
+                    SurfaceDrawer.DrawItemSprite(ref frame, ref position, surfaceData,
+                        itemDefinition.subtypeId,
+                        displayText,
+                        cargo.ContainsKey(itemDefinition.subtypeId) ? cargo[itemDefinition.subtypeId].amount : 0,
+                        itemDefinition.minAmount,
+                        true);
+                }
+
+                var sortedUnknownItemDefinitions = surfaceData.useSubtypeId
+                    ? unknownItemDefinitions.OrderBy(d => d.subtypeId)
+                    : unknownItemDefinitions.OrderBy(d => d.displayName);
+
+                foreach (var itemDefinition in sortedUnknownItemDefinitions)
+                {
+                    if (itemDefinition == null) continue;
+                    if (!CategoryEnabled(itemDefinition.sortId)) continue;
+                    if (IgnoreDefinition(itemDefinition)) continue;
+
+                    string displayText = surfaceData.useSubtypeId ? itemDefinition.subtypeId : itemDefinition.displayName;
+
+                    SurfaceDrawer.DrawItemSprite(ref frame, ref position, surfaceData,
+                        itemDefinition.subtypeId,
+                        displayText,
+                        cargo.ContainsKey(itemDefinition.subtypeId) ? cargo[itemDefinition.subtypeId].amount : 0,
+                        itemDefinition.minAmount,
+                        true);
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Caught Exception while DrawAllKnownSprite: {e.ToString()}");
+            }
+        }
+
+        void DrawAllAvailableSprite(ref MySpriteDrawFrame frame, ref Vector2 position)
+        {
+            try
+            {
+                if (cargo.Count <= 0)
+                {
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, "No Items found.", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                    position += surfaceData.newLine;
+                    return;
+                }
+
+                SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Id [Items]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, "Available", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
+                position += surfaceData.newLine;
+                
+                // Sort items by displayName (or subtypeId if useSubtypeId is enabled)
+                var sortedCargo = surfaceData.useSubtypeId 
+                    ? MahSorting.SortCargoItems(cargo, MahSorting.ItemSortMode.SubtypeId)
+                    : MahSorting.SortCargoItems(cargo, MahSorting.ItemSortMode.DisplayName);
+                
+                foreach (var item in sortedCargo)
+                {
+                    if (item.Value.item == null) continue;
+
+                    // Use the definition that was already found and stored during UpdateContents
+                    CargoItemDefinition itemDefinition = item.Value.definition;
+
+                    if (!CategoryEnabled(itemDefinition != null ? itemDefinition.sortId : "")) continue;
+                    if (IgnoreDefinition(itemDefinition)) continue;
+                    if (cargo[itemDefinition.subtypeId].amount < minVisibleAmount) continue;
+
+                    string displayText = surfaceData.useSubtypeId ? itemDefinition.subtypeId : itemDefinition.displayName;
+
+                    SurfaceDrawer.DrawItemSprite(ref frame, ref position, surfaceData,
+                        itemDefinition.subtypeId,
+                        displayText,
+                        cargo.ContainsKey(itemDefinition.subtypeId) ? cargo[itemDefinition.subtypeId].amount : 0,
+                        itemDefinition.minAmount,
+                        true);
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahrianeIndustries.LCDInfo.LCDItemsSummaryInfo: Caught Exception while DrawAllAvailableSprite: {e.ToString()}");
+            }
+        }
+
+        bool IgnoreDefinition(CargoItemDefinition itemDefinition)
+        {
+            string sType = itemDefinition.subtypeId.ToLower();
+            string dName = itemDefinition.displayName.ToLower();
+
+            foreach (string s in excludeIds)
+                if (sType.Contains(s.ToLower()) || dName.Contains(s.ToLower())) return true;
+
+            return false;
+        }
+
+        // Show a compact tag for active filters (optional UI hint)
+        string GetFilterTag()
+        {
+            // Build a short indicator like [T/R/P/L/K/M/B/RF/CF/D/S] using * for disabled
+            Func<bool, string, string> f = (on, tag) => on ? tag : "*";
+            return $"[{f(surfaceData.showTool,"T")}/{f(surfaceData.showRifle,"R")}/{f(surfaceData.showPistol,"P")}/{f(surfaceData.showLauncher,"L")}/{f(surfaceData.showKit,"K")}/{f(surfaceData.showMisc,"M")}/{f(surfaceData.showBottle,"B")}/{f(surfaceData.showRawFood,"RF")}/{f(surfaceData.showCookedFood,"CF")}/{f(surfaceData.showDrink,"D")}/{f(surfaceData.showSeed,"S")}]";
+        }
+
+        // Evaluate whether a given sortId category is enabled based on toggles
+        bool CategoryEnabled(string sortId)
+        {
+            if (string.IsNullOrEmpty(sortId)) return true; // unknown categories pass through
+
+            string sid = sortId.ToLowerInvariant();
+            if (sid == "tool") return surfaceData.showTool;
+            if (sid == "rifle") return surfaceData.showRifle;
+            if (sid == "pistol") return surfaceData.showPistol;
+            if (sid == "launcher") return surfaceData.showLauncher;
+            if (sid == "kit") return surfaceData.showKit;
+            if (sid == "misc") return surfaceData.showMisc;
+            if (sid == "bottle") return surfaceData.showBottle;
+            if (sid == "rawfood") return surfaceData.showRawFood;
+            if (sid == "cookedfood") return surfaceData.showCookedFood;
+            if (sid == "drink") return surfaceData.showDrink;
+            if (sid == "seed") return surfaceData.showSeed;
+
+            return true; // default allow if category not recognized
+        }
+
+        CargoItemDefinition FindCargoItemDefinition(string typeId, string subtypeId)
+        {
+            // First try: exact match on both typeId and subtypeId
+            foreach (CargoItemDefinition definition in MahDefinitions.OrderedCargoItems(itemDefinitions))
+            {
+                if (definition == null) continue;
+                if (definition.typeId == typeId && definition.subtypeId == subtypeId) return definition;
+            }
+
+            // Second try: match typeId if it contains our definition's typeId (handles MyObjectBuilder_ prefix)
+            foreach (CargoItemDefinition definition in MahDefinitions.OrderedCargoItems(itemDefinitions))
+            {
+                if (definition == null) continue;
+                if (typeId.Contains(definition.typeId) && definition.subtypeId == subtypeId) return definition;
+            }
+
+            // Third try: subtypeId only (for items without duplicate subtypeIds)
+            foreach (CargoItemDefinition definition in MahDefinitions.OrderedCargoItems(itemDefinitions))
+            {
+                if (definition == null) continue;
+                if (definition.subtypeId == subtypeId) return definition;
+            }
+
+            // Check unknown items
+            foreach (CargoItemDefinition definition in unknownItemDefinitions)
+            {
+                if (definition == null) continue;
+                if (definition.typeId == typeId && definition.subtypeId == subtypeId) return definition;
+            }
+
+            return null;
+        }
+    }
+}
