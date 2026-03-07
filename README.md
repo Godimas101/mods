@@ -43,9 +43,9 @@ Additional utility scripts and standalone tools.
 - .NET Framework (included with SDK)
 
 ### SDK Location
-The Space Engineers Mod SDK is located at:
+The Space Engineers Mod SDK is located here once installed from Steam:
 ```
-D:\SteamLibrary\steamapps\common\SpaceEngineersModSDK\
+SteamLibrary\steamapps\common\SpaceEngineersModSDK\
 ```
 
 After Steam installs/updates Space Engineers, the SDK is automatically updated. Use it for:
