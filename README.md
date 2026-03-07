@@ -60,13 +60,6 @@ After Steam installs/updates Space Engineers, the SDK is automatically updated. 
 3. Register text surface scripts in `Data/TextSurfaceScripts.sbc` (if applicable)
 4. Test in game by placing mod in `%AppData%\SpaceEngineers\Mods\` or via workshop
 
-### Testing
-- Launch Space Engineers in Creative mode
-- Enable mod in World Settings
-- Test with various LCD sizes (corner LCD vs standard)
-- Verify CustomData configuration options
-- Test with subgrids and complex ships
-
 ## AI Assistant Skill
 
 This repository includes a comprehensive **Space Engineers Modding Skill** for AI assistants (GitHub Copilot, Claude, etc.).
@@ -132,9 +125,6 @@ space-engineers-modding/
 
 ## Documentation
 
-- **[CLAUDE.md](./CLAUDE.md)** - Comprehensive AI assistant guide with SDK structure, API patterns, and modding concepts
-- **[SCROLLING_IMPLEMENTATION.md](./SCROLLING_IMPLEMENTATION.md)** - Detailed scrolling system documentation with both unified and multi-category approaches
-- **[FUTURE_IDEAS.md](./FUTURE_IDEAS.md)** - Planned features and enhancements
 - **[.github/skills/space-engineers-modding/](./.github/skills/space-engineers-modding/)** - AI assistant skill for modding workflows
 
 ## Key Resources
@@ -202,8 +192,6 @@ When modifying mods:
 These mods are created for personal use and shared on the Space Engineers Steam Workshop. Please respect the Space Engineers EULA and modding guidelines.
 
 ## Credits
-
-Created for [The Canadian Space](https://thecanadian.space) community and published on the Space Engineers Steam Workshop.
 
 SDK provided by Keen Software House.
 
