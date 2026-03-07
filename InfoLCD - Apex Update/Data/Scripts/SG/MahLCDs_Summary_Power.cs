@@ -184,6 +184,8 @@ namespace MahrianeIndustries.LCDInfo
                         scrollSpeed = Math.Max(1, config.Get(CONFIG_SECTION_ID, "ScrollSpeed").ToInt32(60));
                     if (config.ContainsKey(CONFIG_SECTION_ID, "ScrollLines"))
                         scrollLines = Math.Max(1, config.Get(CONFIG_SECTION_ID, "ScrollLines").ToInt32(1));
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "MaxListLines"))
+                        maxListLines = Math.Max(0, config.Get(CONFIG_SECTION_ID, "MaxListLines").ToInt32(5));
 
                     if (config.ContainsKey(CONFIG_SECTION_ID, "SearchId"))
                     {
@@ -294,6 +296,7 @@ namespace MahrianeIndustries.LCDInfo
         bool reverseDirection = false;
         int scrollSpeed = 60;
         int scrollLines = 1;
+        int maxListLines = 5;
         int scrollOffset = 0;
         int ticksSinceLastScroll = 0;
 
@@ -731,11 +734,16 @@ namespace MahrianeIndustries.LCDInfo
 
                 int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
                 
-                // Calculate available lines for data
+                // Calculate available lines for data based on remaining space from current position
                 float screenHeight = mySurface.SurfaceSize.Y;
                 float lineHeight = 30 * surfaceData.textSize;
-                int totalScreenLines = (int)((screenHeight - surfaceData.viewPortOffsetY) / lineHeight);
-                int availableDataLines = Math.Max(1, totalScreenLines);
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
                 
                 // Apply scrolling if enabled
                 int totalDataLines = windTurbines.Count;
@@ -802,11 +810,16 @@ namespace MahrianeIndustries.LCDInfo
 
                 int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
                 
-                // Calculate available lines for data
+                // Calculate available lines for data based on remaining space from current position
                 float screenHeight = mySurface.SurfaceSize.Y;
                 float lineHeight = 30 * surfaceData.textSize;
-                int totalScreenLines = (int)((screenHeight - surfaceData.viewPortOffsetY) / lineHeight);
-                int availableDataLines = Math.Max(1, totalScreenLines);
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
                 
                 // Apply scrolling if enabled
                 int totalDataLines = solarPanels.Count;
@@ -872,11 +885,16 @@ namespace MahrianeIndustries.LCDInfo
 
                 int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
                 
-                // Calculate available lines for data
+                // Calculate available lines for data based on remaining space from current position
                 float screenHeight = mySurface.SurfaceSize.Y;
                 float lineHeight = 30 * surfaceData.textSize;
-                int totalScreenLines = (int)((screenHeight - surfaceData.viewPortOffsetY) / lineHeight);
-                int availableDataLines = Math.Max(1, totalScreenLines);
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
                 
                 // Apply scrolling if enabled
                 int totalDataLines = reactors.Count;
@@ -1027,11 +1045,16 @@ namespace MahrianeIndustries.LCDInfo
 
                 int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
                 
-                // Calculate available lines for data
+                // Calculate available lines for data based on remaining space from current position
                 float screenHeight = mySurface.SurfaceSize.Y;
                 float lineHeight = 30 * surfaceData.textSize;
-                int totalScreenLines = (int)((screenHeight - surfaceData.viewPortOffsetY) / lineHeight);
-                int availableDataLines = Math.Max(1, totalScreenLines);
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
                 
                 // Apply scrolling if enabled
                 int totalDataLines = engines.Count;

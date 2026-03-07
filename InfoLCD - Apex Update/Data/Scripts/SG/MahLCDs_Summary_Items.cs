@@ -555,9 +555,12 @@ namespace MahrianeIndustries.LCDInfo
 
                         if (includeItem)
                         {
-                            if (!cargo.ContainsKey(subtypeId))
+                            // Use composite key to differentiate items with same subtypeId but different typeId (e.g., ConsumableItem_Fruit vs SeedItem_Fruit)
+                            string cargoKey = $"{typeId}_{subtypeId}";
+                            
+                            if (!cargo.ContainsKey(cargoKey))
                             {
-                                cargo.Add(subtypeId, new CargoItemType { item = item, amount = currentAmount });
+                                cargo.Add(cargoKey, new CargoItemType { item = item, amount = currentAmount });
                                 CargoItemDefinition itemDefinition = FindCargoItemDefinition(typeId, subtypeId);
 
                                 if (itemDefinition == null)
@@ -574,14 +577,14 @@ namespace MahrianeIndustries.LCDInfo
                                     unknownItemDefinitions.Add(itemDefinition);
                                 }
 
-                                cargo[subtypeId].definition = itemDefinition;
+                                cargo[cargoKey].definition = itemDefinition;
                             }
                             else
                             {
-                                cargo[subtypeId].amount += currentAmount;
+                                cargo[cargoKey].amount += currentAmount;
                             }
 
-                            cargo[subtypeId].item = item;
+                            cargo[cargoKey].item = item;
                         }
                     }
                 }
@@ -726,11 +729,12 @@ namespace MahrianeIndustries.LCDInfo
                     var itemDefinition = allItems[itemIndex];
                     
                     string displayText = surfaceData.useSubtypeId ? itemDefinition.subtypeId : itemDefinition.displayName;
+                    string cargoKey = $"{itemDefinition.typeId}_{itemDefinition.subtypeId}";
 
                     SurfaceDrawer.DrawItemSprite(ref frame, ref position, surfaceData,
                         itemDefinition.subtypeId,
                         displayText,
-                        cargo.ContainsKey(itemDefinition.subtypeId) ? cargo[itemDefinition.subtypeId].amount : 0,
+                        cargo.ContainsKey(cargoKey) ? cargo[cargoKey].amount : 0,
                         itemDefinition.minAmount,
                         true);
                     
@@ -779,7 +783,8 @@ namespace MahrianeIndustries.LCDInfo
 
                     if (!CategoryEnabled(itemDefinition != null ? itemDefinition.sortId : "")) continue;
                     if (IgnoreDefinition(itemDefinition)) continue;
-                    if (cargo[itemDefinition.subtypeId].amount < minVisibleAmount) continue;
+                    string cargoKey = $"{itemDefinition.typeId}_{itemDefinition.subtypeId}";
+                    if (cargo[cargoKey].amount < minVisibleAmount) continue;
                     
                     allItems.Add(item);
                 }
@@ -813,11 +818,12 @@ namespace MahrianeIndustries.LCDInfo
                     CargoItemDefinition itemDefinition = item.Value.definition;
                     
                     string displayText = surfaceData.useSubtypeId ? itemDefinition.subtypeId : itemDefinition.displayName;
+                    string cargoKey = $"{itemDefinition.typeId}_{itemDefinition.subtypeId}";
 
                     SurfaceDrawer.DrawItemSprite(ref frame, ref position, surfaceData,
                         itemDefinition.subtypeId,
                         displayText,
-                        cargo.ContainsKey(itemDefinition.subtypeId) ? cargo[itemDefinition.subtypeId].amount : 0,
+                        cargo.ContainsKey(cargoKey) ? cargo[cargoKey].amount : 0,
                         itemDefinition.minAmount,
                         true);
                     

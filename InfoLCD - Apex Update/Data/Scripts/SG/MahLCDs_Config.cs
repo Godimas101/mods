@@ -1624,7 +1624,7 @@ namespace MahrianeIndustries.LCDInfo
             sb.AppendLine();
         }
 
-        public static void AppendScrollingConfig(StringBuilder sb, bool toggleScroll = false, bool reverseDirection = false, int scrollSpeed = 5, int scrollLines = 1)
+        public static void AppendScrollingConfig(StringBuilder sb, bool toggleScroll = false, bool reverseDirection = false, int scrollSpeed = 5, int scrollLines = 1, int maxListLines = 5)
         {
             sb.AppendLine("; [ SCROLLING OPTIONS ]");
             sb.AppendLine($"ToggleScroll={toggleScroll}");
@@ -1642,6 +1642,11 @@ namespace MahrianeIndustries.LCDInfo
             sb.AppendLine($"ScrollLines={scrollLines}");
             sb.AppendLine("; Number of lines to scroll per step");
             sb.AppendLine("; Set to 1 for smooth scrolling, higher values for faster navigation");
+            sb.AppendLine();
+            sb.AppendLine($"MaxListLines={maxListLines}");
+            sb.AppendLine("; Maximum number of items to display per list (e.g., max wind turbines shown at once)");
+            sb.AppendLine("; Limits list length even if more screen space is available. Set to 0 to use all available space.");
+            sb.AppendLine("; Useful for grids with many blocks - shows a portion and scrolls through all items");
             sb.AppendLine();
         }
     }
