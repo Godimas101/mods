@@ -99,6 +99,29 @@ namespace MahrianeIndustries.LCDInfo
             sb.AppendLine($"UseColors={surfaceData.useColors}");
 
             sb.AppendLine();
+            sb.AppendLine("; [ GASPRODUCTION - SCROLLING OPTIONS ]");
+            sb.AppendLine($"ToggleScroll={toggleScroll}");
+            sb.AppendLine("; Enable scrolling to view items that don't fit on screen");
+            sb.AppendLine("; Set to 'true' to activate. Scrolling only occurs when there's overflow data.");
+            sb.AppendLine();
+            sb.AppendLine($"ReverseDirection={reverseDirection}");
+            sb.AppendLine("; Scroll direction: 'false' scrolls up (bottom items appear), 'true' scrolls down (top items appear)");
+            sb.AppendLine("; The list wraps around, so you'll eventually see all items in a continuous loop");
+            sb.AppendLine();
+            sb.AppendLine($"ScrollSpeed={scrollSpeed}");
+            sb.AppendLine("; Time between scroll steps in game ticks (60 ticks ≈ 1 second at normal game speed)");
+            sb.AppendLine("; Lower = faster scrolling, Higher = slower scrolling");
+            sb.AppendLine();
+            sb.AppendLine($"ScrollLines={scrollLines}");
+            sb.AppendLine("; Number of lines to scroll per step");
+            sb.AppendLine("; Set to 1 for smooth scrolling, higher values for faster navigation");
+            sb.AppendLine();
+            sb.AppendLine($"MaxListLines={maxListLines}");
+            sb.AppendLine("; Maximum number of items to display per category (e.g., max generators shown at once)");
+            sb.AppendLine("; Limits list length even if more screen space is available. Set to 0 to use all available space.");
+            sb.AppendLine("; Useful for grids with many production blocks - shows a portion and scrolls through all items");
+
+            sb.AppendLine();
             sb.AppendLine("; [ GASPRODUCTION - LAYOUT OPTIONS ]");
             sb.AppendLine($"TextSize={surfaceData.textSize}");
             sb.AppendLine($"ViewPortOffsetX={surfaceData.viewPortOffsetX}");
@@ -174,6 +197,18 @@ namespace MahrianeIndustries.LCDInfo
                     }
 
                     MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "UseColors", ref surfaceData.useColors, ref configError);
+
+                    // Scrolling options (optional; default false/60/1/5)
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ToggleScroll"))
+                        toggleScroll = config.Get(CONFIG_SECTION_ID, "ToggleScroll").ToBoolean(false);
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ReverseDirection"))
+                        reverseDirection = config.Get(CONFIG_SECTION_ID, "ReverseDirection").ToBoolean(false);
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ScrollSpeed"))
+                        scrollSpeed = Math.Max(1, config.Get(CONFIG_SECTION_ID, "ScrollSpeed").ToInt32(6));
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ScrollLines"))
+                        scrollLines = Math.Max(1, config.Get(CONFIG_SECTION_ID, "ScrollLines").ToInt32(1));
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "MaxListLines"))
+                        maxListLines = Math.Max(0, config.Get(CONFIG_SECTION_ID, "MaxListLines").ToInt32(5));
 
                     if (config.ContainsKey(CONFIG_SECTION_ID, "SearchId"))
                     {
@@ -262,6 +297,15 @@ namespace MahrianeIndustries.LCDInfo
         bool compactMode = false;
         bool isStation = false;
         Sandbox.ModAPI.Ingame.MyShipMass gridMass;
+        
+        // Scrolling state
+        bool toggleScroll = false;
+        bool reverseDirection = false;
+        int scrollSpeed = 60;
+        int scrollLines = 1;
+        int maxListLines = 5;
+        int scrollOffset = 0;
+        int ticksSinceLastScroll = 0;
 
         public LCDGasGenerationSummary(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -289,6 +333,28 @@ namespace MahrianeIndustries.LCDInfo
             
             UpdateBlocks();
             UpdateIceContents();
+            
+            // Update scroll offset if scrolling is enabled
+            if (toggleScroll)
+            {
+                ticksSinceLastScroll += 10;  // Update10 = 10 game ticks
+                if (ticksSinceLastScroll >= scrollSpeed)
+                {
+                    ticksSinceLastScroll = 0;
+                    if (reverseDirection)
+                        scrollOffset -= scrollLines;
+                    else
+                        scrollOffset += scrollLines;
+                    
+                    // Scroll offset will wrap around in the draw methods based on actual item count
+                }
+            }
+            else
+            {
+                // Reset scroll when disabled
+                scrollOffset = 0;
+                ticksSinceLastScroll = 0;
+            }
 
             var myFrame = mySurface.DrawFrame();
             var myViewport = new RectangleF((mySurface.TextureSize - mySurface.SurfaceSize) / 2f, mySurface.SurfaceSize);
@@ -525,11 +591,29 @@ namespace MahrianeIndustries.LCDInfo
                     }
 
                     if (showGenerators)
-                        SurfaceDrawer.DrawGasGeneratorSummarySprite(ref frame, ref position, surfaceData, generators);
+                    {
+                        // Category heading (single-line header)
+                        SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"H2/O2 Generators [{generators.Count}]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                        SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Inventory      ", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
+                        position += surfaceData.newLine;
+                        
+                        // Draw scrolling generator list
+                        DrawGeneratorsListSprite(ref frame, ref position);
+                        position += surfaceData.newLine;
+                    }
                 }
 
-                if (showOxygenFarms)
-                    SurfaceDrawer.DrawOxygenFarmSummarySprite(ref frame, ref position, surfaceData, oxygenFarms);
+                if (showOxygenFarms && oxygenFarms.Count > 0)
+                {
+                    // Category heading (single-line header)
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Oxygen Farms [{oxygenFarms.Count}]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"State        ", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
+                    position += surfaceData.newLine;
+                    
+                    // Draw scrolling oxygen farm list
+                    DrawOxygenFarmsListSprite(ref frame, ref position);
+                    position += surfaceData.newLine;
+                }
 
                 // Intake Vents section
                 if (surfaceData.showIntakeVent)
@@ -602,40 +686,228 @@ namespace MahrianeIndustries.LCDInfo
             position += surfaceData.newLine;
         }
 
+        void DrawGeneratorsListSprite(ref MySpriteDrawFrame frame, ref Vector2 position)
+        {
+            try
+            {
+                if (generators.Count <= 0) return;
+
+                // Sort generators alphabetically by custom name
+                MahSorting.SortBlocksByName(generators);
+
+                int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
+                
+                // Calculate available lines for data based on remaining space from current position
+                float screenHeight = mySurface.SurfaceSize.Y;
+                float lineHeight = 30 * surfaceData.textSize;
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
+                
+                // Apply scrolling if enabled
+                int totalDataLines = generators.Count;
+                int startIndex = 0;
+                
+                if (toggleScroll && totalDataLines > 0)
+                {
+                    // Normalize scroll offset to stay within bounds
+                    int normalizedOffset = ((scrollOffset % totalDataLines) + totalDataLines) % totalDataLines;
+                    startIndex = normalizedOffset;
+                }
+
+                // Draw generators with scrolling/wrapping
+                CargoItemDefinition iceDefinition = MahDefinitions.GetDefinition(\"Ore\", \"Ice\");
+                List<VRage.Game.ModAPI.Ingame.MyInventoryItem> inventoryItems = new List<VRage.Game.ModAPI.Ingame.MyInventoryItem>();
+                
+                int linesDrawn = 0;
+                for (int i = 0; i < totalDataLines && linesDrawn < availableDataLines; i++)
+                {
+                    int generatorIndex = (startIndex + i) % totalDataLines;
+                    var generator = generators[generatorIndex];
+                    
+                    if (generator == null) continue;
+
+                    string name = generator.CustomName;
+                    if (name.Length > maxNameLength) name = name.Substring(0, maxNameLength);
+
+                    var inventory = generator.GetInventory(0);
+                    float currentVolume = 0.0f;
+                    
+                    if (iceDefinition != null)
+                    {
+                        int iceCount = 0;
+                        inventoryItems.Clear();
+                        inventory.GetItems(inventoryItems);
+                        foreach (var item in inventoryItems)
+                        {
+                            if (item == null) continue;
+                            var subtypeId = item.Type.SubtypeId;
+                            if (subtypeId.Contains(\"Ice\"))
+                            {
+                                iceCount += item.Amount.ToIntSafe();
+                            }
+                        }
+                        currentVolume = iceCount * iceDefinition.volume;
+                    }
+                    else
+                        currentVolume = (float)inventory.CurrentVolume;
+
+                    float maximumVolume = (float)inventory.MaxVolume * 1000f;
+                    var state = $\"{(!generator.IsWorking ? \"    Off\" : currentVolume <= 0 ? \"   Halt\" : \"  Work\")}\";
+                    var stateColor = !surfaceData.useColors ? surfaceData.surface.ScriptForegroundColor : state.Contains(\"Off\") ? Color.Orange : state.Contains(\"Halt\") ? Color.Yellow : Color.GreenYellow;
+
+                    // Left: state badge + name
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $\"{state}\", TextAlignment.LEFT, stateColor);
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $\"[          ] {name}\", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                    
+                    // Right: ice inventory bar
+                    SurfaceDrawer.DrawHalfBar(ref frame, position, surfaceData, TextAlignment.RIGHT, currentVolume, maximumVolume, Unit.Percent, Color.Aquamarine);
+                    
+                    position += surfaceData.newLine;
+                    linesDrawn++;
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($\"MahrianeIndustries.LCDInfo.LCDInfoScreenGasGenerationSummary: Caught Exception while DrawGeneratorsListSprite: {e.ToString()}\");
+            }
+        }
+
+        void DrawOxygenFarmsListSprite(ref MySpriteDrawFrame frame, ref Vector2 position)
+        {
+            try
+            {
+                if (oxygenFarms.Count <= 0) return;
+
+                // Sort oxygen farms alphabetically by custom name
+                MahSorting.SortBlocksByName(oxygenFarms);
+
+                int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
+                
+                // Calculate available lines for data based on remaining space from current position
+                float screenHeight = mySurface.SurfaceSize.Y;
+                float lineHeight = 30 * surfaceData.textSize;
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
+                
+                // Apply scrolling if enabled
+                int totalDataLines = oxygenFarms.Count;
+                int startIndex = 0;
+                
+                if (toggleScroll && totalDataLines > 0)
+                {
+                    // Normalize scroll offset to stay within bounds
+                    int normalizedOffset = ((scrollOffset % totalDataLines) + totalDataLines) % totalDataLines;
+                    startIndex = normalizedOffset;
+                }
+
+                // Draw oxygen farms with scrolling/wrapping
+                int linesDrawn = 0;
+                for (int i = 0; i < totalDataLines && linesDrawn < availableDataLines; i++)
+                {
+                    int farmIndex = (startIndex + i) % totalDataLines;
+                    var oxygenFarm = oxygenFarms[farmIndex];
+                    
+                    if (oxygenFarm == null) continue;
+
+                    string name = oxygenFarm.CustomName;
+                    if (name.Length > maxNameLength) name = name.Substring(0, maxNameLength);
+
+                    var currentOutput = oxygenFarm.DetailedInfo.Split('\\n')[2].Replace(\"Oxygen Output:\", \"\").Trim();
+                    var state = $\"{(!oxygenFarm.IsWorking ? \"    Off\" : !oxygenFarm.CanProduce ? \"  Idle\" : \"    On\")}\";
+                    var stateColor = !surfaceData.useColors ? surfaceData.surface.ScriptForegroundColor : state.Contains(\"Off\") ? Color.Orange : state.Contains(\"Idle\") ? Color.Yellow : Color.GreenYellow;
+
+                    // Left: state badge + name
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $\"{state}\", TextAlignment.LEFT, stateColor);
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $\"[          ] {name}\", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                    
+                    // Right: oxygen output
+                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $\"{currentOutput}    \", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
+                    
+                    position += surfaceData.newLine;
+                    linesDrawn++;
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($\"MahrianeIndustries.LCDInfo.LCDInfoScreenGasGenerationSummary: Caught Exception while DrawOxygenFarmsListSprite: {e.ToString()}\");
+            }
+        }
+
         void DrawIntakeVentsSummarySprite(ref MySpriteDrawFrame frame, ref Vector2 position)
         {
             try
             {
-                // Count intake vents without allocating new list
-                int intakeCount = 0;
+                // Filter to only intake vents (Depressurize = true)
+                List<IMyAirVent> intakeVents = new List<IMyAirVent>();
                 foreach (var v in airVents)
                 {
-                    if (v != null && v.Depressurize) intakeCount++;
+                    if (v != null && v.Depressurize)
+                        intakeVents.Add(v);
                 }
 
-                SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Intake Vents [{intakeCount}]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
+                if (intakeVents.Count == 0)
+                    return; // Don't show category if no intake vents
+
+                // Category heading
+                SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Intake Vents [{intakeVents.Count}]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
                 SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"State        ", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
                 position += surfaceData.newLine;
 
-                if (intakeCount == 0)
+                // Sort intake vents alphabetically by custom name
+                MahSorting.SortBlocksByName(intakeVents);
+
+                int maxNameLength = (int)(mySurface.SurfaceSize.X > 300 ? 35 : 20);
+                
+                // Calculate available lines for data based on remaining space from current position
+                float screenHeight = mySurface.SurfaceSize.Y;
+                float lineHeight = 30 * surfaceData.textSize;
+                float currentY = position.Y - surfaceData.viewPortOffsetY;
+                float remainingHeight = screenHeight - currentY;
+                int availableDataLines = Math.Max(1, (int)(remainingHeight / lineHeight));
+                
+                // Apply user-configured max list lines (0 = no limit)
+                if (maxListLines > 0)
+                    availableDataLines = Math.Min(availableDataLines, maxListLines);
+                
+                // Apply scrolling if enabled
+                int totalDataLines = intakeVents.Count;
+                int startIndex = 0;
+                
+                if (toggleScroll && totalDataLines > 0)
                 {
-                    SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, "- None", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
-                    position += surfaceData.newLine + surfaceData.newLine;
-                    return;
+                    // Normalize scroll offset to stay within bounds
+                    int normalizedOffset = ((scrollOffset % totalDataLines) + totalDataLines) % totalDataLines;
+                    startIndex = normalizedOffset;
                 }
 
-                // Sort intake vents alphabetically by custom name
-                MahSorting.SortBlocksByName(airVents);
-
-                foreach (var vent in airVents)
+                // Draw intake vents with scrolling/wrapping
+                int linesDrawn = 0;
+                for (int i = 0; i < totalDataLines && linesDrawn < availableDataLines; i++)
                 {
-                    if (vent == null || !vent.Depressurize) continue;
-                    var name = vent.CustomName;
+                    int ventIndex = (startIndex + i) % totalDataLines;
+                    var vent = intakeVents[ventIndex];
+                    
+                    if (vent == null) continue;
+
+                    string name = vent.CustomName;
+                    if (name.Length > maxNameLength) name = name.Substring(0, maxNameLength);
+
                     // Left-side state badge (On/Off) like other Gas Production entries
                     var state = vent.IsWorking ? "    On" : "    Off";
                     var stateColor = !surfaceData.useColors ? surfaceData.surface.ScriptForegroundColor : (vent.IsWorking ? Color.GreenYellow : Color.Orange);
                     SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, state, TextAlignment.LEFT, stateColor);
-                    // Use the same badge+name pattern as other Gas Production rows (no special truncation here)
+                    
+                    // Use the same badge+name pattern as other Gas Production rows
                     SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"[          ] {name}", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
 
                     string label = "[  AIR INTAKE  ]";
@@ -647,6 +919,7 @@ namespace MahrianeIndustries.LCDInfo
                     SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, overlay, TextAlignment.RIGHT, color);
 
                     position += surfaceData.newLine;
+                    linesDrawn++;
                 }
 
                 position += surfaceData.newLine;

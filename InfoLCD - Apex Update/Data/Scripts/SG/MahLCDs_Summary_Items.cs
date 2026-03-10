@@ -442,7 +442,7 @@ namespace MahrianeIndustries.LCDInfo
             // Update scroll offset if scrolling is enabled
             if (toggleScroll)
             {
-                ticksSinceLastScroll++;
+                ticksSinceLastScroll += 10;  // Update10 = 10 game ticks
                 if (ticksSinceLastScroll >= scrollSpeed)
                 {
                     ticksSinceLastScroll = 0;
