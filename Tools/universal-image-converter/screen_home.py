@@ -41,8 +41,8 @@ class HomeScreen(ttk.Frame):
             nav,
             icon="◈",
             title="SETUP  &  REQUIREMENTS",
-            desc=("Install Python, Pillow, and optional encoder tools.\n"
-                  "Start here if this is your first time."),
+            desc=("No install required — just the exe.\n"
+                  "One optional tool (texconv) for best DDS quality."),
             command=lambda: self._app.show_screen("setup"),
         ).pack(fill="x", pady=(0, 10))
 
