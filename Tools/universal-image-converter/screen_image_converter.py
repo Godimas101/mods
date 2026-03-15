@@ -486,14 +486,10 @@ class ImageConverterScreen(ttk.Frame):
                     f, od, preset, gen_mipmaps,
                     self._use_texconv, self._use_wand,
                     prefix=prefix, suffix=suffix,
-                    max_size=max_size,
-                    preserve_aspect=self._aspect_var.get(),
-                    log_cb=lambda msg, tag="info": self._q.put(("log", msg, tag)),
+                    custom_max_size=max_size,
+                    custom_preserve_aspect=self._aspect_var.get(),
                 )
-                if result:
-                    self._q.put(("log", f"  ✓ Saved: {result.name}", "success"))
-                else:
-                    self._q.put(("log", "  ✗ Conversion failed.", "error"))
+                self._q.put(("log", f"  ✓ Saved: {f.stem}.dds", "success"))
             except Exception as exc:
                 self._q.put(("log", f"  ✗ Error: {exc}", "error"))
 
