@@ -20,7 +20,7 @@ Edit operations (all numpy-only, no scipy):
   Swap         — swap left and right channels
   Extract L/R  — keep only one channel as mono
 
-Playback via pygame.mixer (optional — editor is fully functional without it).
+Playback via sounddevice (optional — editor is fully functional without it).
 """
 
 import struct
@@ -42,11 +42,10 @@ except ImportError:
     _HAS_NUMPY = False
 
 try:
-    import pygame
-    pygame.mixer.init()
-    _HAS_PYGAME = True
+    import sounddevice as _sd
+    _HAS_SD = True
 except Exception:
-    _HAS_PYGAME = False
+    _HAS_SD = False
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -407,15 +406,16 @@ class EditorScreen(ttk.Frame):
         self._sel_end:   int          = 0
         self._playing:   bool         = False
         self._play_start_frame: int   = 0
-        self._play_start_tick:  int   = 0    # pygame ticks at play start
+        self._play_start_time:  float = 0.0  # time.time() at play start
+        self._play_region_frames: int = 0    # length of playing region
 
         self._build_ui()
 
         if not _HAS_NUMPY:
             self._log("numpy not installed \u2014 install it to use the Audio Editor.", "error")
-            self._log("Run:  pip install numpy pygame", "warn")
-        if not _HAS_PYGAME:
-            self._log("pygame not installed \u2014 playback unavailable.", "warn")
+            self._log("Run:  pip install numpy sounddevice", "warn")
+        if not _HAS_SD:
+            self._log("sounddevice not installed \u2014 playback unavailable.", "warn")
 
     # -----------------------------------------------------------------------
     # UI
@@ -468,7 +468,7 @@ class EditorScreen(ttk.Frame):
         T.separator(self, pady=(6, 6))
 
         # ── Playback bar ──────────────────────────────────────────────────────
-        if _HAS_PYGAME:
+        if _HAS_SD:
             play_bar = ttk.Frame(self, style="TFrame")
             play_bar.pack(fill="x", padx=16, pady=(0, 6))
 
@@ -615,7 +615,7 @@ class EditorScreen(ttk.Frame):
     def _load_file(self, path: Path):
         if not _HAS_NUMPY:
             T.themed_showinfo(self.winfo_toplevel(), "numpy Missing",
-                              "Install numpy to use the Audio Editor:\n\npip install numpy pygame")
+                              "Install numpy to use the Audio Editor:\n\npip install numpy sounddevice")
             return
         try:
             samples, sr = load_wav(path)
@@ -716,44 +716,42 @@ class EditorScreen(ttk.Frame):
         self._play_region(self._sel_start, self._sel_end)
 
     def _play_region(self, start, end):
-        if not _HAS_PYGAME or self._samples is None:
+        if not _HAS_SD or self._samples is None:
             return
-        import io, tempfile
+        import time
         region = self._samples[start:end]
         if len(region) == 0:
             return
         self._on_stop()
         try:
-            buf = io.BytesIO()
-            save_wav_to_buffer(buf, region, self._sample_rate)
-            buf.seek(0)
-            pygame.mixer.music.load(buf)
-            pygame.mixer.music.play()
-            self._playing         = True
-            self._play_start_frame = start
-            self._play_start_tick  = pygame.time.get_ticks()
+            _sd.play(region, self._sample_rate)
+            self._playing              = True
+            self._play_start_frame     = start
+            self._play_start_time      = time.time()
+            self._play_region_frames   = len(region)
             self._tick_playhead()
         except Exception as exc:
             self._log(f"Playback error: {exc}", "error")
 
     def _on_stop(self):
-        if _HAS_PYGAME:
+        if _HAS_SD:
             try:
-                pygame.mixer.music.stop()
+                _sd.stop()
             except Exception:
                 pass
         self._playing = False
         self._waveform.set_playhead(-1)
 
     def _tick_playhead(self):
+        import time
         if not self._playing:
             return
-        if not pygame.mixer.music.get_busy():
+        elapsed_s      = time.time() - self._play_start_time
+        elapsed_frames = int(elapsed_s * self._sample_rate)
+        if elapsed_frames >= self._play_region_frames:
             self._playing = False
             self._waveform.set_playhead(-1)
             return
-        elapsed_ms    = pygame.time.get_ticks() - self._play_start_tick
-        elapsed_frames = int(elapsed_ms / 1000 * self._sample_rate)
         self._waveform.set_playhead(self._play_start_frame + elapsed_frames)
         self.after(33, self._tick_playhead)
 

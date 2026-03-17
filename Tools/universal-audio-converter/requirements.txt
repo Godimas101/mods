@@ -6,7 +6,7 @@
 #
 # Required for Audio Editor:
 numpy>=1.21.0
-pygame>=2.1.0
+sounddevice>=0.4.0
 #
 # PyInstaller — for building the standalone exe:
 #   pip install pyinstaller

@@ -6,7 +6,7 @@ Displays tool detection status and download/install instructions for:
   • ffmpeg        (required for Audio Converter)
   • xWMAEncode    (required for XWM output)
   • numpy         (required for Audio Editor)
-  • pygame        (required for Audio Editor playback)
+  • sounddevice   (required for Audio Editor playback)
 """
 
 import shutil
@@ -144,21 +144,21 @@ class SetupScreen(ttk.Frame):
         self._section(parent, "PYTHON PACKAGES  (Audio Editor)")
 
         numpy_ok  = _check_python_package("numpy")
-        pygame_ok = _check_python_package("pygame")
+        sd_ok     = _check_python_package("sounddevice")
 
         self._package_row(parent, "numpy",  numpy_ok,
                           "Audio processing — fade, trim, normalize, resample, channel mix.")
-        self._package_row(parent, "pygame", pygame_ok,
+        self._package_row(parent, "sounddevice", sd_ok,
                           "Audio playback with real-time position tracking for the waveform playhead.")
 
-        if not (numpy_ok and pygame_ok):
+        if not (numpy_ok and sd_ok):
             ttk.Label(parent,
                       text="Install missing packages by running:",
                       style="Muted.TLabel").pack(anchor="w", padx=24, pady=(10, 2))
             cmd_frame = tk.Frame(parent, bg=T.PANEL)
             cmd_frame.pack(fill="x", padx=24, pady=(0, 4))
             tk.Label(cmd_frame,
-                     text="  pip install numpy pygame  ",
+                     text="  pip install numpy sounddevice  ",
                      bg=T.PANEL, fg=T.CYAN,
                      font=("Courier New", 10)).pack(anchor="w", padx=8, pady=6)
 
