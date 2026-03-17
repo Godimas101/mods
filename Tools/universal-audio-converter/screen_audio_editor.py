@@ -513,75 +513,78 @@ class EditorScreen(ttk.Frame):
         self._log_text.pack(fill="x", padx=6, pady=(0, 6))
 
     def _build_edit_toolbar(self):
-        def _grp_label(parent, text):
-            ttk.Label(parent, text=text,
-                      style="Muted.TLabel",
-                      font=("Courier New", 7)).pack(side="left", padx=(0, 4))
+        toolbar = tk.Frame(self, bg=T.BG)
+        toolbar.pack(fill="x", padx=16, pady=(0, 4))
 
-        def _vsep(parent):
-            tk.Frame(parent, bg=T.BORDER, width=1).pack(
-                side="left", fill="y", padx=(8, 8), pady=2)
-
-        # ── Row 1: Clip · Transform · Volume ─────────────────────────────────
-        row1 = ttk.Frame(self, style="TFrame")
-        row1.pack(fill="x", padx=16, pady=(0, 4))
-
-        # Clip group
-        _grp_label(row1, "CLIP")
-        self._se_btn(row1, "\u2702 TRIM",    self._op_trim).pack(side="left", padx=(0, 4))
-        self._se_btn(row1, "\u2298 SILENCE", self._op_silence).pack(side="left", padx=(0, 0))
-        _vsep(row1)
-
-        # Transform group
-        _grp_label(row1, "TRANSFORM")
-        self._se_btn(row1, "\u21c4 REVERSE",   self._op_reverse).pack(side="left", padx=(0, 4))
-        self._se_btn(row1, "\u25b2 NORMALIZE", self._op_normalize).pack(side="left", padx=(0, 4))
-        self._se_btn(row1, "\u2248 DC OFFSET", self._op_dc_offset).pack(side="left", padx=(0, 0))
-        _vsep(row1)
-
-        # Volume group
-        _grp_label(row1, "VOLUME")
-        ttk.Label(row1, text="Gain:", style="TLabel").pack(side="left")
-        self._gain_var = tk.StringVar(value="1.0")
-        tk.Entry(row1, textvariable=self._gain_var,
-                 bg=T.PANEL, fg=T.TEXT, insertbackground=T.CYAN,
-                 font=("Courier New", 9), relief="flat",
-                 highlightthickness=1, highlightbackground=T.BORDER,
-                 highlightcolor=T.CYAN, width=6).pack(side="left", padx=(4, 4), ipady=2)
-        self._se_btn(row1, "\u2713 APPLY", self._op_gain).pack(side="left")
-
-        # Info button
-        tk.Button(row1, text="\u24d8",
+        # Info button — top-right of the toolbar
+        tk.Button(toolbar, text="\u24d8",
                   command=self._on_edit_info,
                   bg=T.BG, fg=T.MUTED,
                   activebackground=T.HOVER, activeforeground=T.CYAN,
                   font=("Courier New", 9), relief="flat", bd=0,
-                  cursor="hand2").pack(side="right")
+                  cursor="hand2").pack(anchor="ne")
 
-        # ── Row 2: Fades · Speed ──────────────────────────────────────────────
-        row2 = ttk.Frame(self, style="TFrame")
-        row2.pack(fill="x", padx=16, pady=(0, 4))
+        grid = tk.Frame(toolbar, bg=T.BG)
+        grid.pack(fill="x")
+        grid.columnconfigure(0, minsize=80)   # label column — fixed width
+        grid.columnconfigure(1, weight=1)     # buttons column — fills remaining
 
-        # Fades group
-        _grp_label(row2, "FADES")
-        self._se_btn(row2, "\u2197 FADE IN",  self._op_fade_in).pack(side="left", padx=(0, 4))
-        self._se_btn(row2, "\u2198 FADE OUT", self._op_fade_out).pack(side="left", padx=(0, 0))
-        _vsep(row2)
+        def _lbl(row, text):
+            tk.Label(grid, text=text,
+                     bg=T.BG, fg=T.MUTED,
+                     font=("Courier New", 7, "bold"),
+                     anchor="e").grid(row=row, column=0,
+                                      sticky="e", padx=(0, 8), pady=2)
 
-        # Speed group
-        _grp_label(row2, "SPEED")
+        def _btn_cell(row):
+            cell = tk.Frame(grid, bg=T.BG)
+            cell.grid(row=row, column=1, sticky="w", pady=2)
+            return cell
+
+        # ── Clip ──────────────────────────────────────────────────────────────
+        _lbl(0, "CLIP")
+        cell = _btn_cell(0)
+        self._se_btn(cell, "\u2702 TRIM",    self._op_trim).pack(side="left", padx=(0, 4))
+        self._se_btn(cell, "\u2298 SILENCE", self._op_silence).pack(side="left")
+
+        # ── Transform ─────────────────────────────────────────────────────────
+        _lbl(1, "TRANSFORM")
+        cell = _btn_cell(1)
+        self._se_btn(cell, "\u21c4 REVERSE",   self._op_reverse).pack(side="left", padx=(0, 4))
+        self._se_btn(cell, "\u25b2 NORMALIZE", self._op_normalize).pack(side="left", padx=(0, 4))
+        self._se_btn(cell, "\u2248 DC OFFSET", self._op_dc_offset).pack(side="left")
+
+        # ── Volume ────────────────────────────────────────────────────────────
+        _lbl(2, "VOLUME")
+        cell = _btn_cell(2)
+        ttk.Label(cell, text="Gain:", style="TLabel").pack(side="left")
+        self._gain_var = tk.StringVar(value="1.0")
+        tk.Entry(cell, textvariable=self._gain_var,
+                 bg=T.PANEL, fg=T.TEXT, insertbackground=T.CYAN,
+                 font=("Courier New", 9), relief="flat",
+                 highlightthickness=1, highlightbackground=T.BORDER,
+                 highlightcolor=T.CYAN, width=6).pack(side="left", padx=(4, 4), ipady=2)
+        self._se_btn(cell, "\u2713 APPLY", self._op_gain).pack(side="left")
+
+        # ── Fades ─────────────────────────────────────────────────────────────
+        _lbl(3, "FADES")
+        cell = _btn_cell(3)
+        self._se_btn(cell, "\u2197 FADE IN",  self._op_fade_in).pack(side="left", padx=(0, 4))
+        self._se_btn(cell, "\u2198 FADE OUT", self._op_fade_out).pack(side="left")
+
+        # ── Speed ─────────────────────────────────────────────────────────────
+        _lbl(4, "SPEED")
+        cell = _btn_cell(4)
         self._speed_var = tk.StringVar(value="1.25\u00d7")
-        ttk.Combobox(row2, textvariable=self._speed_var,
+        ttk.Combobox(cell, textvariable=self._speed_var,
                      values=SPEED_OPTIONS,
                      state="readonly", width=7,
                      style="SE.TCombobox").pack(side="left", padx=(0, 4))
-        self._se_btn(row2, "\u2713 APPLY", self._op_speed).pack(side="left")
+        self._se_btn(cell, "\u2713 APPLY", self._op_speed).pack(side="left")
 
-        # ── Row 3: Channels ───────────────────────────────────────────────────
-        row3 = ttk.Frame(self, style="TFrame")
-        row3.pack(fill="x", padx=16, pady=(0, 4))
-
-        _grp_label(row3, "CHANNELS")
+        # ── Channels ──────────────────────────────────────────────────────────
+        _lbl(5, "CHANNELS")
+        cell = _btn_cell(5)
         for label, cmd in [
             ("\u2295 MONO\u2192STEREO", self._op_mono_to_stereo),
             ("\u2296 STEREO\u2192MONO", self._op_stereo_to_mono),
@@ -589,7 +592,7 @@ class EditorScreen(ttk.Frame):
             ("\u25c4 EXTRACT L",        lambda: self._op_extract(0)),
             ("EXTRACT R \u25ba",        lambda: self._op_extract(1)),
         ]:
-            self._se_btn(row3, label, cmd).pack(side="left", padx=(0, 4))
+            self._se_btn(cell, label, cmd).pack(side="left", padx=(0, 4))
 
     # -----------------------------------------------------------------------
     # Widget helpers
