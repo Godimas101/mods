@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <LCDTextures>
+
+    <!-- =====================================================================
+         Claude Engineers — LCD Images
+         Add one LCDTextureDefinition per image.
+         TexturePath  → Textures\Models\   (used on the LCD surface mesh)
+         SpritePath   → Textures\Sprites\  (used in the UI picker thumbnail)
+         Both paths must point to a valid DDS file.
+         SubtypeId must be globally unique — prefix with "ClaudeEngineers_"
+         ===================================================================== -->
+
+    <LCDTextureDefinition>
+      <Id>
+        <TypeId>LCDTextureDefinition</TypeId>
+        <SubtypeId>ClaudeEngineers_Image1</SubtypeId>
+      </Id>
+      <LocalizationId>ClaudeEngineers_Image1</LocalizationId>
+      <TexturePath>Textures\Models\ClaudeEngineers_Image1.dds</TexturePath>
+      <SpritePath>Textures\Sprites\ClaudeEngineers_Image1.dds</SpritePath>
+      <Selectable>true</Selectable>
+    </LCDTextureDefinition>
+
+    <LCDTextureDefinition>
+      <Id>
+        <TypeId>LCDTextureDefinition</TypeId>
+        <SubtypeId>ClaudeEngineers_Image2</SubtypeId>
+      </Id>
+      <LocalizationId>ClaudeEngineers_Image2</LocalizationId>
+      <TexturePath>Textures\Models\ClaudeEngineers_Image2.dds</TexturePath>
+      <SpritePath>Textures\Sprites\ClaudeEngineers_Image2.dds</SpritePath>
+      <Selectable>true</Selectable>
+    </LCDTextureDefinition>
+
+  </LCDTextures>
+</Definitions>
