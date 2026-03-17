@@ -17,7 +17,7 @@ a = Analysis(
     ["se_audio_launcher.py"],
     pathex=[],
     binaries=np_binaries + pg_binaries,
-    datas=np_datas + pg_datas,
+    datas=np_datas + pg_datas + [("icon.ico", ".")],
     hiddenimports=np_hiddenimports + pg_hiddenimports + [
         # Screen modules loaded lazily by string name
         "screen_audio_home",
@@ -56,6 +56,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
+    icon="icon.ico",
     console=False,      # no console window — GUI only
     disable_windowed_traceback=False,
     argv_emulation=False,
