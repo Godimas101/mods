@@ -72,6 +72,71 @@ HOW IT WORKS
 
 
 # ---------------------------------------------------------------------------
+# Dithering info popup content
+# ---------------------------------------------------------------------------
+
+_DITHERING_INFO = """\
+WHAT IS DITHERING?
+
+  SE's LCD palette has only 512 colours (8 shades each for R, G and B).
+  Most images contain far more colours than that, so each pixel must be
+  rounded to the nearest available colour — which causes banding and
+  loss of detail in gradients.
+
+  Dithering distributes the rounding error from each pixel to its
+  neighbours, so the eye blends them into smoother tones.  Think of it
+  like a newspaper halftone pattern — up close it's dots, but from a
+  distance it reads as a gradient.
+
+──────────────────────────────────────
+
+MODES
+
+  None
+    No dithering.  Every pixel snaps to the nearest palette colour.
+    Fastest conversion.  Best for logos, pixel art, and flat-colour
+    images where banding is not a concern.
+
+  Floyd-Steinberg
+    The classic algorithm.  Error is spread to 4 neighbours using a
+    7-1-5-3 weight pattern.  Excellent all-round choice for photos and
+    artwork.  Recommended default.
+
+  Ju-Ji-Ni  (Jarvis-Judice-Ninke)
+    Error spreads across 12 neighbours over 3 rows.  Produces a finer,
+    more uniform grain than Floyd-Steinberg at the cost of slower
+    conversion.  Good for large images with subtle gradients.
+
+  Stucci
+    A variant of Ju-Ji-Ni with adjusted weights that adds a slight
+    texture to the diffusion pattern.  Reduces the "worm" artefacts
+    that can appear in flat areas with Floyd-Steinberg.
+
+  Sierra 3
+    Spreads error to 10 neighbours over 3 rows using a softer pattern.
+    Sits between Floyd-Steinberg and Ju-Ji-Ni — smoother grain without
+    the full compute cost of Ju-Ji-Ni.
+
+  Sierra 2
+    A lighter two-row version of Sierra 3.  Faster than Sierra 3 with
+    slightly less smoothing.  Good compromise for medium-sized images.
+
+  Sierra Lite
+    The lightest Sierra variant — only 3 neighbours.  Nearly as fast
+    as None but adds a touch of dithering to reduce harsh banding.
+    Good for simple graphics where you want minimal grain.
+
+──────────────────────────────────────
+
+TIPS
+
+  \u2022 Photos and gradients → Floyd-Steinberg or Sierra 3
+  \u2022 Logos and flat art   → None
+  \u2022 Maximum quality      → Ju-Ji-Ni (slower)
+  \u2022 Fastest with grain   → Sierra Lite"""
+
+
+# ---------------------------------------------------------------------------
 # Helpers: convert a ScreenPreset to an SETextSurface-compatible object
 # ---------------------------------------------------------------------------
 
@@ -249,12 +314,16 @@ class TextConverterScreen(ttk.Frame):
         ttk.Label(sf, text="Dithering:", style="TLabel").grid(
             row=2, column=0, sticky="w", pady=(0, 6))
         self._dither_var = tk.StringVar(value="Floyd-Steinberg")
-        dither_combo = ttk.Combobox(
-            sf, textvariable=self._dither_var,
+        dither_ctrl = ttk.Frame(sf, style="TFrame")
+        dither_ctrl.grid(row=2, column=1, sticky="w", pady=(0, 6))
+        ttk.Combobox(
+            dither_ctrl, textvariable=self._dither_var,
             values=C.DITHER_MODES, state="readonly",
             width=20, style="SE.TCombobox",
-        )
-        dither_combo.grid(row=2, column=1, sticky="w", pady=(0, 6))
+        ).pack(side="left", padx=(0, 6))
+        ttk.Button(dither_ctrl, text="\u24d8",
+                   command=self._on_dither_info,
+                   style="Info.TButton").pack(side="left")
 
         # Row 3: Options
         ttk.Label(sf, text="Options:", style="TLabel").grid(
@@ -632,4 +701,12 @@ class TextConverterScreen(ttk.Frame):
             "How To Apply",
             _HOW_TO_APPLY,
             width=480,
+        )
+
+    def _on_dither_info(self) -> None:
+        T.themed_showinfo(
+            self.winfo_toplevel(),
+            "Dithering Modes",
+            _DITHERING_INFO,
+            width=520,
         )

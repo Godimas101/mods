@@ -115,7 +115,7 @@ class HomeScreen(ttk.Frame):
         link.bind("<Enter>", lambda _e: link.config(fg=T.CYAN))
         link.bind("<Leave>", lambda _e: link.config(fg=T.BLUE))
 
-        ttk.Label(self, text="v1.1  \u00b7  SE Image Converter",
+        ttk.Label(self, text="v1.2  \u00b7  SE Image Converter",
                   style="Muted.TLabel").pack(anchor="center", pady=(6, 10))
 
     # -----------------------------------------------------------------------
