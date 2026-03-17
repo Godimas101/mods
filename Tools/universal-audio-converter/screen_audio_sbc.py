@@ -331,6 +331,7 @@ class SBCScreen(ttk.Frame):
             bg=T.PANEL, fg=T.MUTED,
             font=("Courier New", 8),
             relief="flat", bd=0, pady=10,
+            wraplength=256, justify="center",
             highlightthickness=1,
             highlightbackground=T.BORDER,
         )
@@ -426,7 +427,8 @@ class SBCScreen(ttk.Frame):
 
         canvas.bind("<Configure>", _on_resize)
         self._settings_frame.bind("<Configure>", _on_frame_configure)
-        canvas.bind_all("<MouseWheel>", _on_wheel)
+        canvas.bind("<Enter>", lambda _e: canvas.bind_all("<MouseWheel>", _on_wheel))
+        canvas.bind("<Leave>", lambda _e: canvas.unbind_all("<MouseWheel>"))
 
         self._build_settings_widgets(self._settings_frame)
 
@@ -540,11 +542,13 @@ class SBCScreen(ttk.Frame):
         apply_row.pack(fill="x", padx=8, pady=(10, 4))
         ttk.Button(apply_row, text="APPLY SETTINGS TO ALL FILES",
                    command=self._on_apply_to_all,
-                   style="SE.TButton").pack(side="left")
+                   style="SE.TButton").pack(anchor="w")
         tk.Label(apply_row,
-                 text="  copies non-identity settings to every file",
+                 text="Copies category, volume, wave type, loop and other\n"
+                      "non-identity settings to every file in the list.",
                  bg=T.BG, fg=T.MUTED,
-                 font=("Courier New", 8)).pack(side="left")
+                 font=("Courier New", 7),
+                 justify="left").pack(anchor="w", pady=(2, 0))
 
         # Start with settings hidden (no file selected)
         self._set_settings_visible(False)
