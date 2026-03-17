@@ -140,6 +140,41 @@ class SetupScreen(ttk.Frame):
 
         T.separator(parent, pady=(6, 14))
 
+        # ── HOW TO ADD TO PATH ────────────────────────────────────────────────
+        self._section(parent, "HOW TO ADD A TOOL TO PATH  (Windows)")
+
+        path_card = tk.Frame(parent, bg=T.PANEL,
+                             highlightthickness=1,
+                             highlightbackground=T.BORDER)
+        path_card.pack(fill="x", padx=24, pady=(0, 8))
+
+        path_inner = tk.Frame(path_card, bg=T.PANEL)
+        path_inner.pack(fill="x", padx=12, pady=10)
+
+        tk.Label(path_inner,
+                 text=("Adding a tool to PATH means Windows can find it from anywhere,\n"
+                       "so you don't need to place it next to the exe every time."),
+                 bg=T.PANEL, fg=T.TEXT,
+                 font=("Courier New", 9), justify="left", anchor="w").pack(anchor="w")
+
+        tk.Frame(path_inner, bg=T.BORDER, height=1).pack(fill="x", pady=(8, 6))
+
+        steps_text = (
+            "1.  Press  Win + S  and search for  'environment variables'\n"
+            "2.  Click  'Edit the system environment variables'\n"
+            "3.  Click  'Environment Variables...'  at the bottom\n"
+            "4.  Under  System variables,  select  Path  and click  Edit\n"
+            "5.  Click  New  and paste the full path to the folder\n"
+            "      containing the tool  (e.g.  C:\\Tools\\ffmpeg\\bin)\n"
+            "6.  Click  OK  on all windows to save\n"
+            "7.  Restart any open terminals or applications for changes to take effect"
+        )
+        tk.Label(path_inner, text=steps_text,
+                 bg=T.PANEL, fg=T.MUTED,
+                 font=("Courier New", 8), justify="left", anchor="w").pack(anchor="w")
+
+        T.separator(parent, pady=(6, 14))
+
         # ── PYTHON PACKAGES ──────────────────────────────────────────────────
         self._section(parent, "PYTHON PACKAGES  (Audio Editor)")
 
