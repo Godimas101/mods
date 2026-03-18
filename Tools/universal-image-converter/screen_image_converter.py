@@ -279,7 +279,7 @@ class ImageConverterScreen(ttk.Frame):
 
         # Row 4: Background colour
         ttk.Label(settings_frame, text="Background:", style="TLabel").grid(
-            row=4, column=0, sticky="e", padx=(0, 8), pady=(6, 0))
+            row=4, column=0, sticky="w", pady=(6, 0))
         bg_ctrl = ttk.Frame(settings_frame, style="TFrame")
         bg_ctrl.grid(row=4, column=1, sticky="w", pady=(6, 0))
 
