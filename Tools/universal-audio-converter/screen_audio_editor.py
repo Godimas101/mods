@@ -454,7 +454,6 @@ class EditorScreen(ttk.Frame):
         self._se_btn(file_bar, "SAVE", self._on_save).pack(side="left", padx=(0, 4))
         self._se_btn(file_bar, "SAVE AS...", self._on_save_as).pack(side="left", padx=(0, 16))
         self._se_btn(file_bar, "UNDO", self._on_undo).pack(side="left", padx=(0, 4))
-        self._se_btn(file_bar, "SELECT ALL", self._on_select_all).pack(side="left")
 
         self._file_label_var = tk.StringVar(value="No file loaded")
         ttk.Label(file_bar, textvariable=self._file_label_var,
@@ -492,6 +491,7 @@ class EditorScreen(ttk.Frame):
             self._btn_play.pack(side="left", padx=(0, 6))
             self._se_btn(play_bar, "\u25a0  STOP", self._on_stop).pack(side="left", padx=(0, 16))
             self._se_btn(play_bar, "\u25b6  PLAY SELECTION", self._on_play_selection).pack(side="left", padx=(0, 6))
+            self._se_btn(play_bar, "\u229e  SELECT ALL", self._on_select_all).pack(side="left", padx=(0, 6))
             self._se_btn(play_bar, "\u2715  CLEAR SELECTION", self._on_clear_selection).pack(side="left")
 
             self._playback_var = tk.StringVar(value="")
