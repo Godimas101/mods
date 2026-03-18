@@ -52,7 +52,7 @@ except Exception:
 # ---------------------------------------------------------------------------
 WAVEFORM_HEIGHT  = 160       # canvas height in pixels
 WAVEFORM_BG      = T.PANEL
-WAVEFORM_COLOR   = T.CYAN
+WAVEFORM_COLOR   = T.MUTED
 SELECTION_COLOR  = "#ff8c0033"   # semi-transparent orange (drawn as overlay)
 PLAYHEAD_COLOR   = T.TEXT
 HANDLE_COLOR     = T.ORANGE
@@ -239,6 +239,7 @@ class WaveformCanvas(tk.Canvas):
         self.bind("<ButtonPress-1>",   self._on_press)
         self.bind("<B1-Motion>",       self._on_drag)
         self.bind("<ButtonRelease-1>", self._on_release)
+        self.bind("<Motion>",          self._on_hover)
 
         # Callbacks
         self.on_selection_change = None   # called with (start_frame, end_frame)
@@ -288,6 +289,15 @@ class WaveformCanvas(tk.Canvas):
         if self._sel_end_px == 0 or self._sel_end_px > self._width:
             self._sel_end_px = self._width
         self._redraw()
+
+    def _on_hover(self, event) -> None:
+        HANDLE_TOL = 8
+        x = event.x
+        if (abs(x - self._sel_start_px) < HANDLE_TOL or
+                abs(x - self._sel_end_px) < HANDLE_TOL):
+            self.config(cursor="sb_h_double_arrow")
+        else:
+            self.config(cursor="crosshair")
 
     def _on_press(self, event) -> None:
         x = event.x
