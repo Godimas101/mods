@@ -157,7 +157,7 @@ class SetupScreen(ttk.Frame):
                  bg=T.PANEL, fg=T.MUTED,
                  font=("Courier New", 8), justify="left", anchor="w").pack(anchor="w")
 
-        tk.Frame(parent, style="TFrame", height=20).pack()
+        tk.Frame(parent, bg=T.BG, height=20).pack()
 
     # -----------------------------------------------------------------------
     # Content helpers
