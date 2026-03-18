@@ -431,9 +431,7 @@ class ImageConverterScreen(ttk.Frame):
         name    = _PRESET_DISPLAY_MAP.get(display, display)
         if name.strip().lower() == "custom":
             self._custom_row.grid(row=2, column=1, sticky="w", pady=(0, 6))
-            # Apply initial height-lock state
-            if self._aspect_var.get():
-                self._height_entry.config(state="disabled")
+            self._height_entry.config(state="normal")
         else:
             self._custom_row.grid_remove()
 
