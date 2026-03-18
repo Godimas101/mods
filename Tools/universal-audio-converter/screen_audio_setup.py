@@ -161,14 +161,25 @@ class SetupScreen(ttk.Frame):
         tk.Frame(path_inner, bg=T.BORDER, height=1).pack(fill="x", pady=(8, 6))
 
         steps_text = (
-            "1.  Press  Win + S  and search for  'environment variables'\n"
-            "2.  Click  'Edit the system environment variables'\n"
-            "3.  Click  'Environment Variables...'  at the bottom\n"
-            "4.  Under  System variables,  select  Path  and click  Edit\n"
-            "5.  Click  New  and paste the full path to the folder\n"
-            "      containing the tool  (e.g.  C:\\Tools\\ffmpeg\\bin)\n"
-            "6.  Click  OK  on all windows to save\n"
-            "7.  Restart any open terminals or applications for changes to take effect"
+            "1.  Press  Win + S  (opens the search bar)\n"
+            "2.  Type:  environment variables  — click the result that says\n"
+            "      'Edit the system environment variables'\n"
+            "3.  A window called System Properties opens.\n"
+            "      Click the  'Environment Variables...'  button at the bottom.\n"
+            "4.  A new window opens with two lists.\n"
+            "      Look at the BOTTOM list labelled  'System variables'.\n"
+            "5.  Scroll down that list until you see a variable named  Path.\n"
+            "      Click on  Path  to select it  (it will highlight blue).\n"
+            "6.  Click the  Edit  button below the System variables list.\n"
+            "      (Do NOT click New — that creates a different variable.)\n"
+            "7.  Another window opens showing a list of folder paths.\n"
+            "      Click the  New  button on the RIGHT side of this window.\n"
+            "8.  A blank line appears at the bottom of the list.\n"
+            "      Type or paste the full path to the FOLDER containing your tool.\n"
+            "      Example:  C:\\SpaceEngineersModSDK\\Tools\n"
+            "      Example:  C:\\Tools\\ffmpeg\n"
+            "9.  Click  OK  on all three windows to save your changes.\n"
+            "10. Restart any open programs for the change to take effect."
         )
         tk.Label(path_inner, text=steps_text,
                  bg=T.PANEL, fg=T.MUTED,
