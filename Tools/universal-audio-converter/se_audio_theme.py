@@ -267,6 +267,133 @@ def append_log(widget: tk.Text, message: str, tag: str = "info") -> None:
 
 
 # ===========================================================================
+# Audio Editor Reference Window
+# ===========================================================================
+
+class AudioEditorReferenceWindow(tk.Toplevel):
+    """Dark-themed resizable reference window for Audio Editor controls."""
+
+    _CONTENT = [
+        ("section", "CLIP"),
+        ("op", "✂  TRIM",
+         "Cuts the audio down to just your selection.\n"
+         "Everything outside the selection is removed."),
+        ("op", "⊘  SILENCE",
+         "Replaces the selected region with silence.\n"
+         "The total length of the file does not change."),
+        ("section", "TRANSFORM"),
+        ("op", "⇄  REVERSE",
+         "Plays the selected region backwards."),
+        ("op", "▲  NORMALIZE",
+         "Boosts (or lowers) the selected region so its peak volume\n"
+         "hits 0 dB — the maximum before clipping."),
+        ("op", "≈  DC OFFSET",
+         "Removes a DC bias from the waveform. Useful if the waveform\n"
+         "is shifted above or below the centre line, which can cause\n"
+         "clicks or reduce headroom."),
+        ("section", "VOLUME"),
+        ("op", "Gain  /  ✓ APPLY",
+         "Multiplies the selected region by the gain value.\n"
+         "1.0 = no change  ·  0.5 = half volume  ·  2.0 = double.\n"
+         "Values above ~1.0 may cause clipping."),
+        ("section", "FADES"),
+        ("op", "↗  FADE IN",
+         "Smoothly ramps volume from silence up to full level\n"
+         "across the selected region."),
+        ("op", "↘  FADE OUT",
+         "Smoothly ramps volume from full level down to silence\n"
+         "across the selected region."),
+        ("section", "SPEED"),
+        ("op", "✓  APPLY",
+         "Resamples the audio to change playback speed.\n"
+         "Faster speeds raise pitch; slower speeds lower it.\n"
+         "The file length changes to match."),
+        ("section", "CHANNELS"),
+        ("op", "⊕  MONO → STEREO",  "Duplicates a mono track into both L and R channels."),
+        ("op", "⊖  STEREO → MONO",  "Mixes L and R channels down to a single mono track."),
+        ("op", "↔  SWAP L/R",        "Swaps the left and right channels."),
+        ("op", "◄  EXTRACT L",       "Keeps only the left channel, discards the right."),
+        ("op", "   EXTRACT R  ►",    "Keeps only the right channel, discards the left."),
+    ]
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Audio Editor — Controls Reference")
+        self.configure(bg=BG)
+        self.resizable(True, True)
+        self.geometry("560x580")
+        self.minsize(420, 360)
+        self.transient(parent)
+        self._build()
+
+    def _build(self):
+        # Header
+        hdr = ttk.Frame(self, style="TFrame")
+        hdr.pack(fill="x", padx=14, pady=(12, 0))
+        ttk.Label(hdr, text="▣  AUDIO EDITOR — CONTROLS REFERENCE",
+                  style="Section.TLabel").pack(side="left")
+
+        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=14, pady=(8, 0))
+        ttk.Label(self,
+                  text="All operations apply to the selected waveform region.",
+                  style="Muted.TLabel").pack(anchor="w", padx=14, pady=(4, 8))
+
+        # Scrollable content
+        content_frame = ttk.Frame(self, style="Panel.TFrame")
+        content_frame.pack(fill="both", expand=True, padx=14)
+
+        txt = tk.Text(
+            content_frame,
+            bg=PANEL, fg=TEXT,
+            font=("Courier New", 9),
+            relief="flat", bd=0,
+            highlightthickness=0,
+            wrap="word",
+            padx=12, pady=8,
+            cursor="arrow",
+            state="normal",
+        )
+        vsb = ttk.Scrollbar(content_frame, orient="vertical",
+                            command=txt.yview,
+                            style="SE.Vertical.TScrollbar")
+        txt.configure(yscrollcommand=vsb.set)
+        vsb.pack(side="right", fill="y")
+        txt.pack(side="left", fill="both", expand=True)
+
+        txt.tag_configure("section",
+                          foreground=CYAN,
+                          font=("Courier New", 10, "bold"),
+                          spacing1=12, spacing3=2)
+        txt.tag_configure("op_name",
+                          foreground=TEXT,
+                          font=("Courier New", 9, "bold"),
+                          lmargin1=16, lmargin2=16,
+                          spacing1=4)
+        txt.tag_configure("op_desc",
+                          foreground=MUTED,
+                          font=("Courier New", 9),
+                          lmargin1=32, lmargin2=32,
+                          spacing3=6)
+
+        for item in self._CONTENT:
+            if item[0] == "section":
+                txt.insert("end", item[1] + "\n", "section")
+            else:
+                _, name, desc = item
+                txt.insert("end", name + "\n", "op_name")
+                for line in desc.split("\n"):
+                    txt.insert("end", line + "\n", "op_desc")
+
+        txt.config(state="disabled")
+
+        # Footer
+        foot = ttk.Frame(self, style="TFrame")
+        foot.pack(fill="x", padx=14, pady=(8, 12))
+        ttk.Button(foot, text="CLOSE", command=self.destroy,
+                   style="SE.TButton").pack(side="right")
+
+
+# ===========================================================================
 # Themed Dialogs
 # ===========================================================================
 

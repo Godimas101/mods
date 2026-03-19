@@ -288,6 +288,15 @@ class WaveformCanvas(tk.Canvas):
         self._redraw()
         self._fire_selection()
 
+    def set_selection_frames(self, start: int, end: int) -> None:
+        if self._n_frames <= 0:
+            return
+        w = max(1, self._width)
+        self._sel_start_px = int(start / self._n_frames * w)
+        self._sel_end_px   = int(end   / self._n_frames * w)
+        self._redraw()
+        self._fire_selection()
+
     # -----------------------------------------------------------------------
 
     def _on_resize(self, event) -> None:
@@ -424,6 +433,7 @@ class EditorScreen(ttk.Frame):
         self._play_start_frame: int   = 0
         self._play_start_time:  float = 0.0  # time.time() at play start
         self._play_region_frames: int = 0    # length of playing region
+        self._ref_window              = None
 
         self._build_ui()
 
@@ -490,9 +500,9 @@ class EditorScreen(ttk.Frame):
             self._btn_play = self._se_btn(play_bar, "\u25b6  PLAY",  self._on_play)
             self._btn_play.pack(side="left", padx=(0, 6))
             self._se_btn(play_bar, "\u25a0  STOP", self._on_stop).pack(side="left", padx=(0, 16))
-            self._se_btn(play_bar, "\u25b6  PLAY SELECTION", self._on_play_selection).pack(side="left", padx=(0, 6))
-            self._se_btn(play_bar, "\u229e  SELECT ALL", self._on_select_all).pack(side="left", padx=(0, 6))
-            self._se_btn(play_bar, "\u2715  CLEAR SELECTION", self._on_clear_selection).pack(side="left")
+            self._se_btn(play_bar, "|\u25b6|  PLAY SELECTION", self._on_play_selection).pack(side="left", padx=(0, 6))
+            self._se_btn(play_bar, "|\u229e|  SELECT ALL", self._on_select_all).pack(side="left", padx=(0, 6))
+            self._se_btn(play_bar, "|\u2715|  CLEAR SELECTION", self._on_clear_selection).pack(side="left")
 
             self._playback_var = tk.StringVar(value="")
             ttk.Label(play_bar, textvariable=self._playback_var,
@@ -534,12 +544,9 @@ class EditorScreen(ttk.Frame):
         toolbar.pack(fill="x", padx=16, pady=(0, 4))
 
         # Info button — top-right of the toolbar
-        tk.Button(toolbar, text="\u24d8",
-                  command=self._on_edit_info,
-                  bg=T.BG, fg=T.MUTED,
-                  activebackground=T.HOVER, activeforeground=T.CYAN,
-                  font=("Courier New", 9), relief="flat", bd=0,
-                  cursor="hand2").pack(anchor="ne")
+        ttk.Button(toolbar, text="\u24d8",
+                   command=self._on_edit_info,
+                   style="Info.TButton").pack(anchor="ne")
 
         grid = tk.Frame(toolbar, bg=T.BG)
         grid.pack(fill="x")
@@ -616,52 +623,10 @@ class EditorScreen(ttk.Frame):
     # -----------------------------------------------------------------------
 
     def _on_edit_info(self):
-        T.themed_showinfo(self.winfo_toplevel(), "Audio Editor — Controls Reference", """\
-CLIP
-  ✂ TRIM          Cuts the audio down to just your selection.
-                  Everything outside the selection is removed.
-
-  ⊘ SILENCE       Replaces the selected region with silence.
-                  The total length of the file does not change.
-
-TRANSFORM
-  ⇄ REVERSE       Plays the selected region backwards.
-
-  ▲ NORMALIZE     Boosts (or lowers) the selected region so its
-                  peak volume hits 0 dB — the maximum before clipping.
-
-  ≈ DC OFFSET     Removes a DC bias from the waveform. Useful if the
-                  waveform is shifted above or below the centre line,
-                  which can cause clicks or reduce headroom.
-
-VOLUME
-  Gain / ✓ APPLY  Multiplies the selected region by the gain value.
-                  1.0 = no change  |  0.5 = half volume  |  2.0 = double.
-                  Values above ~1.0 may cause clipping.
-
-FADES
-  ↗ FADE IN       Smoothly ramps volume from silence up to full level
-                  across the selected region.
-
-  ↘ FADE OUT      Smoothly ramps volume from full level down to silence
-                  across the selected region.
-
-SPEED
-  ✓ APPLY         Resamples the audio to change playback speed.
-                  Faster speeds raise pitch; slower speeds lower it.
-                  The file length changes to match.
-
-CHANNELS
-  ⊕ MONO→STEREO   Duplicates a mono track into both L and R channels.
-
-  ⊖ STEREO→MONO   Mixes L and R channels down to a single mono track.
-
-  ↔ SWAP L/R      Swaps the left and right channels.
-
-  ◄ EXTRACT L     Keeps only the left channel, discards the right.
-
-  EXTRACT R ►     Keeps only the right channel, discards the left.\
-""")
+        if self._ref_window and self._ref_window.winfo_exists():
+            self._ref_window.lift()
+        else:
+            self._ref_window = T.AudioEditorReferenceWindow(self.winfo_toplevel())
 
     def _se_btn(self, parent, text, cmd, width=None):
         kw = {"width": width} if width else {}
@@ -690,7 +655,6 @@ CHANNELS
         dur = n / sr
         ch_label = "Stereo" if ch == 2 else "Mono"
         self._info_var.set(
-            f"{self._path.name if self._path else ''}  \u2014  "
             f"{dur:.2f}s  \u00b7  {sr} Hz  \u00b7  {ch_label}")
         # Selection
         ss, se = self._sel_start, self._sel_end
@@ -727,9 +691,9 @@ CHANNELS
             self._sample_rate = sr
             self._history.clear()
             self._sel_start   = 0
-            self._sel_end     = len(samples)
+            self._sel_end     = 0
             self._waveform.load(samples)
-            self._waveform.select_all()
+            self._waveform.clear_selection()
             self._file_label_var.set(path.name)
             self._update_info()
             self._log_sep()
@@ -875,12 +839,31 @@ CHANNELS
         return True
 
     def _apply(self, new_samples, label: str):
+        prev_start = self._sel_start
+        prev_end   = self._sel_end
+        prev_len   = len(self._samples) if self._samples is not None else 0
+        had_selection = prev_end > prev_start
+
         self._push_history()
         self._samples   = new_samples
+        new_len = len(new_samples)
         self._sel_start = 0
-        self._sel_end   = len(new_samples)
+        self._sel_end   = 0
         self._waveform.load(new_samples)
-        self._waveform.select_all()
+
+        if had_selection and new_len == prev_len:
+            # Length unchanged — restore clamped selection
+            new_start = min(prev_start, new_len)
+            new_end   = min(prev_end,   new_len)
+            if new_end > new_start:
+                self._sel_start = new_start
+                self._sel_end   = new_end
+                self._waveform.set_selection_frames(new_start, new_end)
+            else:
+                self._waveform.clear_selection()
+        else:
+            self._waveform.clear_selection()
+
         self._update_info()
         self._log(f"\u2713 {label}", "success")
 

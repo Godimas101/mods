@@ -420,6 +420,30 @@ The SG Core mods form the base gameplay overhaul. Individual notes go here as th
   - Fix: always output a canvas exactly `target_w × target_h`; letterbox source when preserve aspect is on. Height field is now always independently editable.
 - **AirlockMonitor scrolling:** Still pending — next up for InfoLCD Apex Update.
 
+### 2026-03-18 (Session 3) — Universal Audio Converter UI Polish
+
+#### Audio Editor — Selection Button Icons
+- Added `|` brackets to Play Selection, Select All, and Clear Selection button icons so they visually read as selection-scoped actions (e.g. `|▶|`, `|⊞|`, `|✕|`).
+
+#### Audio Editor — File Open Behavior
+- Changed file-open to start with **no selection** (previously selected all by default). `_sel_start` and `_sel_end` set to `0`; calls `clear_selection()` instead of `select_all()`.
+
+#### Audio Editor — Info Strip
+- Removed filename from the waveform info strip. Strip now shows only numeric data: duration, sample rate, channel count. Filename already visible in the header label above the waveform — duplication removed.
+
+#### Audio Editor — Info Popup Quality Upgrade
+- Replaced the plain messagebox info popup with a proper `AudioEditorReferenceWindow` class in `se_audio_theme.py`. Matches the image converter's reference window: dark-themed resizable Toplevel (560×580), styled Text widget with `section`/`op_name`/`op_desc` tags, CLOSE button footer.
+- Info button upgraded to `ttk.Button` with `Info.TButton` style (ⓘ). Singleton pattern — re-opens and lifts existing window instead of spawning duplicates.
+
+#### Audio Editor — `_apply()` Selection Preservation
+- **Problem:** Every edit operation (trim, fade, normalize, etc.) was calling `select_all()` after applying, which forced a full waveform selection the user didn't ask for.
+- **Fix:** `_apply()` now saves the previous selection before the operation, then:
+  - If there **was** a selection **and** audio length is unchanged → restores the clamped selection via new `set_selection_frames(start, end)` method
+  - Otherwise (no selection, or length changed by the operation) → calls `clear_selection()`
+- **New waveform method:** Added `set_selection_frames(start, end)` to the `WaveformWidget` class — converts frame indices to pixel positions and fires the selection event.
+
+---
+
 ### 2026-03-14 — CustomData Section Header Standardization
 - **Change:** All CustomData section headers now follow consistent `; [ SCREENNAME - CATEGORY ]` pattern
 - **Scrolling headers:** Were mixed (`; [ SCROLLING OPTIONS ]`, `; [ SCREENNAME - SCROLLING OPTIONS ]`) — now all use `; [ SCREENNAME - SCROLLING OPTIONS ]`
