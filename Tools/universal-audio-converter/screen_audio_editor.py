@@ -318,9 +318,15 @@ class WaveformCanvas(tk.Canvas):
     # -----------------------------------------------------------------------
 
     def _on_resize(self, event) -> None:
-        self._width = event.width
-        if self._sel_end_px == 0 or self._sel_end_px > self._width:
-            self._sel_end_px = self._width
+        new_w = max(1, event.width)
+        if self._width > 0 and self._width != new_w:
+            # Proportionally rescale selection so it survives transient
+            # intermediate resize events (e.g. when the channel btn frame
+            # is packed/unpacked and tkinter fires multiple Configure events)
+            scale = new_w / self._width
+            self._sel_start_px = min(new_w, round(self._sel_start_px * scale))
+            self._sel_end_px   = min(new_w, round(self._sel_end_px   * scale))
+        self._width = new_w
         self._redraw()
 
     def _on_hover(self, event) -> None:
