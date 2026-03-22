@@ -1,11 +1,1 @@
-CLAUDE.md
-[REFERENCE FILES]/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# PyInstaller build output
-build/
-dist/
+MOD_CATALOGUE.md

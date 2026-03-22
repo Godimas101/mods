@@ -278,7 +278,8 @@ class WaveformCanvas(tk.Canvas):
         self._samples  = None
         self._n_frames = 0
         self.delete("all")
-        self.create_text(self.winfo_width() // 2, WAVEFORM_HEIGHT // 2,
+        ch = max(WAVEFORM_HEIGHT, self.winfo_height())
+        self.create_text(self.winfo_width() // 2, ch // 2,
                          text="No file loaded — open a WAV file to begin",
                          fill=T.MUTED, font=("Courier New", 9))
 
@@ -328,12 +329,24 @@ class WaveformCanvas(tk.Canvas):
         self._fire_selection()
 
     def set_zoom(self, zoom: float, view_start: float = None) -> None:
+        # Preserve selection in frame-space so it represents the same time range
+        sel_start_f, sel_end_f = self.get_selection_frames()
+
         self._zoom = max(1.0, min(float(zoom), 64.0))
         max_start  = max(0.0, 1.0 - 1.0 / self._zoom)
         if view_start is not None:
             self._view_start = max(0.0, min(float(view_start), max_start))
         else:
             self._view_start = max(0.0, min(self._view_start, max_start))
+
+        # Re-map selection pixels to the new zoom/scroll coordinates
+        if self._n_frames > 0:
+            w       = max(1, self._width)
+            visible = max(1, int(self._n_frames / self._zoom))
+            start_f = int(self._view_start * self._n_frames)
+            self._sel_start_px = int((sel_start_f - start_f) / visible * w)
+            self._sel_end_px   = int((sel_end_f   - start_f) / visible * w)
+
         self._redraw()
         if self.on_zoom_change:
             self.on_zoom_change(self._zoom, self._view_start)
@@ -343,12 +356,24 @@ class WaveformCanvas(tk.Canvas):
 
     def xview(self, *args) -> None:
         """Scrollbar-compatible xview for ttk.Scrollbar integration."""
+        # Preserve selection in frame-space so scrolling doesn't shift the time range
+        sel_start_f, sel_end_f = self.get_selection_frames()
+
         max_start = max(0.0, 1.0 - 1.0 / self._zoom)
         if args[0] == "moveto":
             self._view_start = max(0.0, min(float(args[1]), max_start))
         elif args[0] == "scroll":
             step = (1.0 / self._zoom) * (0.1 if args[2] == "units" else 1.0)
             self._view_start = max(0.0, min(self._view_start + int(args[1]) * step, max_start))
+
+        # Re-map selection pixels to the new scroll position
+        if self._n_frames > 0:
+            w       = max(1, self._width)
+            visible = max(1, int(self._n_frames / self._zoom))
+            start_f = int(self._view_start * self._n_frames)
+            self._sel_start_px = int((sel_start_f - start_f) / visible * w)
+            self._sel_end_px   = int((sel_end_f   - start_f) / visible * w)
+
         self._redraw()
         if self.on_zoom_change:
             self.on_zoom_change(self._zoom, self._view_start)
@@ -424,7 +449,7 @@ class WaveformCanvas(tk.Canvas):
     def _redraw(self) -> None:
         self.delete("all")
         w = self._width
-        h = WAVEFORM_HEIGHT
+        h = max(WAVEFORM_HEIGHT, self.winfo_height())
 
         if self._samples is None or self._n_frames == 0:
             self.create_text(w // 2, h // 2,
@@ -572,7 +597,7 @@ class EditorScreen(ttk.Frame):
 
         # ── Waveform canvas ───────────────────────────────────────────────────
         canvas_frame = tk.Frame(self, bg=T.BG)
-        canvas_frame.pack(fill="x", padx=16, pady=(0, 4))
+        canvas_frame.pack(fill="both", expand=True, padx=16, pady=(0, 4))
 
         # Channel toggle buttons — shown for stereo, hidden for mono
         BTN_W = 32
@@ -591,9 +616,21 @@ class EditorScreen(ttk.Frame):
         self._ch_active = [True, True]   # [L_active, R_active]
 
         self._waveform = WaveformCanvas(canvas_frame, height=WAVEFORM_HEIGHT)
-        self._waveform.pack(side="left", fill="x", expand=True)
+        self._waveform.pack(side="left", fill="both", expand=True)
         self._waveform.on_selection_change = self._on_selection_change
         self._waveform.clear()
+
+        # File / selection info bar
+        info_bar = ttk.Frame(self, style="TFrame")
+        info_bar.pack(fill="x", padx=16, pady=(2, 0))
+
+        self._info_var = tk.StringVar(value="")
+        ttk.Label(info_bar, textvariable=self._info_var,
+                  style="Muted.TLabel").pack(side="left")
+
+        self._sel_var = tk.StringVar(value="")
+        ttk.Label(info_bar, textvariable=self._sel_var,
+                  style="Muted.TLabel").pack(side="right")
 
         # Zoom controls + horizontal scroll bar
         zoom_bar = ttk.Frame(self, style="TFrame")
@@ -613,24 +650,12 @@ class EditorScreen(ttk.Frame):
         self._h_scroll.set(0.0, 1.0)
         self._waveform.on_zoom_change = self._on_waveform_zoom_change
 
-        # Selection / file info bar
-        info_bar = ttk.Frame(self, style="TFrame")
-        info_bar.pack(fill="x", padx=16, pady=(2, 0))
-
-        self._info_var = tk.StringVar(value="")
-        ttk.Label(info_bar, textvariable=self._info_var,
-                  style="Muted.TLabel").pack(side="left")
-
-        self._sel_var = tk.StringVar(value="")
-        ttk.Label(info_bar, textvariable=self._sel_var,
-                  style="Muted.TLabel").pack(side="right")
-
         T.separator(self, pady=(6, 6))
 
         # ── Playback bar ──────────────────────────────────────────────────────
         if _HAS_SD:
             play_bar = ttk.Frame(self, style="TFrame")
-            play_bar.pack(fill="x", padx=16, pady=(0, 6))
+            play_bar.pack(fill="x", padx=16, pady=(0, 0))
 
             self._btn_play = self._se_btn(play_bar, "\u25b6  PLAY",  self._on_play)
             self._btn_play.pack(side="left", padx=(0, 6))
@@ -652,7 +677,7 @@ class EditorScreen(ttk.Frame):
 
         # ── Log ───────────────────────────────────────────────────────────────
         log_frame = ttk.Frame(self, style="Panel.TFrame")
-        log_frame.pack(fill="both", expand=True, padx=16, pady=(0, 14))
+        log_frame.pack(fill="x", padx=16, pady=(0, 14))
 
         log_hdr = ttk.Frame(log_frame, style="Panel.TFrame")
         log_hdr.pack(fill="x", padx=6, pady=(4, 2))
@@ -676,7 +701,7 @@ class EditorScreen(ttk.Frame):
 
     def _build_edit_toolbar(self):
         toolbar = tk.Frame(self, bg=T.BG)
-        toolbar.pack(fill="x", padx=16, pady=(0, 4))
+        toolbar.pack(fill="x", padx=16, pady=(0, 0))
 
         # Info button — far right, top-anchored to sit level with the Clip row
         ttk.Button(toolbar, text="\u24d8",
@@ -847,7 +872,7 @@ class EditorScreen(ttk.Frame):
             self._waveform.load(samples)
             self._waveform.clear_selection()
             self._h_scroll.set(0.0, 1.0)
-            self._update_channel_ui(samples.shape[1])
+            self._update_channel_ui(samples.shape[1], reset_channels=True)
             self._file_label_var.set(path.name)
             self._update_info()
             self._log_sep()
@@ -914,10 +939,11 @@ class EditorScreen(ttk.Frame):
                 activebackground=T.ORANGE if on else T.PANEL,
             )
 
-    def _update_channel_ui(self, n_ch: int) -> None:
+    def _update_channel_ui(self, n_ch: int, reset_channels: bool = False) -> None:
         """Show/hide channel toggle buttons and enable/disable stereo-only ops."""
         if n_ch == 2:
-            self._ch_active = [True, True]
+            if reset_channels:
+                self._ch_active = [True, True]
             self._ch_btn_frame.pack(side="left", fill="y",
                                     before=self._waveform)
             self._update_ch_buttons()
@@ -956,12 +982,28 @@ class EditorScreen(ttk.Frame):
         if not self._history:
             self._log("Nothing to undo.", "warn")
             return
+        prev_zoom, prev_view_start = self._waveform.get_zoom()
+        prev_ch    = self._samples.shape[1] if self._samples is not None else 0
+        prev_start = self._sel_start
+        prev_end   = self._sel_end
         self._samples, self._sample_rate = self._history.pop()
+        new_len = len(self._samples)
         self._waveform.load(self._samples)
-        self._sel_start = 0
-        self._sel_end   = len(self._samples)
-        self._waveform.select_all()
-        self._update_channel_ui(self._samples.shape[1])
+        if prev_zoom > 1.0:
+            self._waveform.set_zoom(prev_zoom, prev_view_start)
+        # Restore selection clamped to the restored length
+        new_start = min(prev_start, new_len)
+        new_end   = min(prev_end,   new_len)
+        if new_end > new_start:
+            self._sel_start = new_start
+            self._sel_end   = new_end
+            self._waveform.set_selection_frames(new_start, new_end)
+        else:
+            self._sel_start = 0
+            self._sel_end   = 0
+            self._waveform.clear_selection()
+        self._update_channel_ui(self._samples.shape[1],
+                                reset_channels=(self._samples.shape[1] != prev_ch))
         self._update_info()
         self._log("Undo.", "muted")
 
@@ -1029,7 +1071,11 @@ class EditorScreen(ttk.Frame):
         prev_start = self._sel_start
         prev_end   = self._sel_end
         prev_len   = len(self._samples) if self._samples is not None else 0
+        prev_ch    = self._samples.shape[1] if self._samples is not None else 0
         had_selection = prev_end > prev_start
+
+        # Save zoom — load() unconditionally resets it to 1.0
+        prev_zoom, prev_view_start = self._waveform.get_zoom()
 
         self._push_history()
         self._samples   = new_samples
@@ -1037,6 +1083,10 @@ class EditorScreen(ttk.Frame):
         self._sel_start = 0
         self._sel_end   = 0
         self._waveform.load(new_samples)
+
+        # Restore zoom after load() reset it
+        if prev_zoom > 1.0:
+            self._waveform.set_zoom(prev_zoom, prev_view_start)
 
         if had_selection and new_len == prev_len:
             # Length unchanged — restore clamped selection
@@ -1051,7 +1101,8 @@ class EditorScreen(ttk.Frame):
         else:
             self._waveform.clear_selection()
 
-        self._update_channel_ui(new_samples.shape[1])
+        self._update_channel_ui(new_samples.shape[1],
+                                reset_channels=(new_samples.shape[1] != prev_ch))
         self._update_info()
         self._log(f"\u2713 {label}", "success")
 
@@ -1059,7 +1110,16 @@ class EditorScreen(ttk.Frame):
         """Active channel indices. Returns [0] for mono; subset of [0,1] for stereo."""
         if self._samples is None or self._samples.shape[1] < 2:
             return [0]
-        return [ch for ch in range(2) if self._ch_active[ch]] or [0, 1]
+        return [ch for ch in range(2) if self._ch_active[ch]]
+
+    def _require_active_channel(self) -> bool:
+        """Return False (with warning) if stereo and both channels are deactivated."""
+        if (self._samples is not None and
+                self._samples.shape[1] == 2 and
+                not any(self._ch_active)):
+            self._log("No channels active — toggle L or R first.", "warn")
+            return False
+        return True
 
     def _op_trim(self):
         if not self._require_loaded():
@@ -1072,9 +1132,12 @@ class EditorScreen(ttk.Frame):
                     f"Trim: kept {s/self._sample_rate:.3f}s \u2013 {e/self._sample_rate:.3f}s")
 
     def _op_fade_in(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
             return
         s, e = self._sel_start, self._sel_end
+        if e <= s:
+            self._log("Make a selection first.", "warn")
+            return
         ln   = e - s
         out  = self._samples.copy()
         ramp = np.linspace(0.0, 1.0, ln, dtype=np.float32)
@@ -1083,9 +1146,12 @@ class EditorScreen(ttk.Frame):
         self._apply(out, f"Fade In on selection ({ln/self._sample_rate:.3f}s)")
 
     def _op_fade_out(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
             return
         s, e = self._sel_start, self._sel_end
+        if e <= s:
+            self._log("Make a selection first.", "warn")
+            return
         ln   = e - s
         out  = self._samples.copy()
         ramp = np.linspace(1.0, 0.0, ln, dtype=np.float32)
@@ -1094,7 +1160,7 @@ class EditorScreen(ttk.Frame):
         self._apply(out, f"Fade Out on selection ({ln/self._sample_rate:.3f}s)")
 
     def _op_normalize(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
             return
         out = self._samples.copy()
         for ch in self._ch_mask():
@@ -1104,51 +1170,72 @@ class EditorScreen(ttk.Frame):
         self._apply(out, "Normalize to 0 dBFS")
 
     def _op_gain(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
             return
         try:
             factor = float(self._gain_var.get())
         except ValueError:
             self._log("Invalid gain value.", "error")
             return
-        out = self._samples.copy()
-        for ch in self._ch_mask():
-            out[:, ch] = np.clip(out[:, ch] * factor, -1.0, 1.0)
-        self._apply(out, f"Gain ×{factor}")
+        s, e = self._sel_start, self._sel_end
+        out  = self._samples.copy()
+        if e > s:
+            for ch in self._ch_mask():
+                out[s:e, ch] = np.clip(out[s:e, ch] * factor, -1.0, 1.0)
+            self._apply(out, f"Gain ×{factor} on selection ({(e-s)/self._sample_rate:.3f}s)")
+        else:
+            for ch in self._ch_mask():
+                out[:, ch] = np.clip(out[:, ch] * factor, -1.0, 1.0)
+            self._apply(out, f"Gain ×{factor} (whole file)")
 
     def _op_silence(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
             return
         s, e = self._sel_start, self._sel_end
+        if e <= s:
+            self._log("Make a selection first.", "warn")
+            return
         out  = self._samples.copy()
         for ch in self._ch_mask():
             out[s:e, ch] = 0.0
-        self._apply(out, "Silence selection")
+        self._apply(out, f"Silence selection ({(e-s)/self._sample_rate:.3f}s)")
 
     def _op_reverse(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
             return
         s, e = self._sel_start, self._sel_end
+        if e <= s:
+            self._log("Make a selection first.", "warn")
+            return
         out  = self._samples.copy()
         for ch in self._ch_mask():
             out[s:e, ch] = self._samples[s:e, ch][::-1]
-        self._apply(out, "Reverse selection")
+        self._apply(out, f"Reverse selection ({(e-s)/self._sample_rate:.3f}s)")
 
     def _op_dc_offset(self):
-        if not self._require_loaded():
+        if not self._require_loaded() or not self._require_active_channel():
+            return
+        ch_names = ["L", "R"]
+        reports = []
+        for ch in self._ch_mask():
+            mean = float(np.mean(self._samples[:, ch]))
+            label = ch_names[ch] if self._samples.shape[1] == 2 else "mono"
+            reports.append((ch, mean, label))
+        offset_str = ", ".join(f"{lbl}={m:+.4f}" for _, m, lbl in reports)
+        if all(abs(m) < 0.0001 for _, m, _ in reports):
+            self._log(f"DC offset: no significant offset detected ({offset_str})", "info")
             return
         out = self._samples.copy()
-        for ch in self._ch_mask():
-            out[:, ch] -= np.mean(out[:, ch])
-        self._apply(out, "DC Offset removal")
+        for ch, mean, _ in reports:
+            out[:, ch] = np.clip(self._samples[:, ch] - mean, -1.0, 1.0)
+        self._apply(out, f"DC Offset removal ({offset_str})")
 
     def _op_speed(self):
         if not self._require_loaded():
             return
         factor = SPEED_MAP.get(self._speed_var.get(), 1.25)
-        self._apply(op_speed(self._samples, factor, self._sample_rate),
-                    f"Speed ×{factor}  (new duration: "
-                    f"{len(self._samples)/factor/self._sample_rate:.2f}s)")
+        result = op_speed(self._samples, factor, self._sample_rate)
+        self._apply(result, f"Speed ×{factor}  (new duration: {len(result)/self._sample_rate:.2f}s)")
 
     def _op_mono_to_stereo(self):
         if not self._require_loaded():

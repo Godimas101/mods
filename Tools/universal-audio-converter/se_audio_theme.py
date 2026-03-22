@@ -289,9 +289,10 @@ class AudioEditorReferenceWindow(tk.Toplevel):
          "The total length of the file does not change."),
         ("section", "TRANSFORM"),
         ("op", "⇄  REVERSE",
-         "Plays the selected region backwards."),
+         "Permanently reverses the selected region in the file.\n"
+         "Requires a selection."),
         ("op", "▲  NORMALIZE",
-         "Boosts (or lowers) the selected region so its peak volume\n"
+         "Boosts (or lowers) the whole file so its peak volume\n"
          "hits 0 dB — the maximum before clipping."),
         ("op", "≈  DC OFFSET",
          "Removes a DC bias from the waveform. Useful if the waveform\n"
@@ -300,6 +301,7 @@ class AudioEditorReferenceWindow(tk.Toplevel):
         ("section", "VOLUME"),
         ("op", "Gain  /  ✓ APPLY",
          "Multiplies the selected region by the gain value.\n"
+         "With no selection, applies to the whole file.\n"
          "1.0 = no change  ·  0.5 = half volume  ·  2.0 = double.\n"
          "Values above ~1.0 may cause clipping."),
         ("section", "FADES"),
