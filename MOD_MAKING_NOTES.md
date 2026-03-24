@@ -381,6 +381,14 @@ The SG Core mods form the base gameplay overhaul. Individual notes go here as th
 - **Bug caught during implementation:** `AppendScrollingConfig` call in Container was still passing `maxListLines` variable after the field was removed — caused compile error. Fixed by dropping the argument (uses default).
 - **Typo debugging:** Farming ToggleScroll=True was entered as "Ttrue" — `ToBoolean("Ttrue")` returns false silently. Scrolling appeared broken. Lesson: always check manually-typed config values for typos first.
 
+### 2026-03-23 — InfoLCD Fill Bar Oscillation Bug Fix
+
+- **User report:** Fill bar on Items/Ores/Ingots/Components/Ammo screens bouncing rapidly between different percentages (~6Hz). Started after scrolling was added. Could not reproduce in-house — waiting for user's CustomData to confirm root cause.
+- **Bug 1 — Items.cs `scrollOffset` field mutation:** Draw methods (`DrawAllKnownSprite`, `DrawAllAvailableSprite`) were writing back `scrollOffset = ((scrollOffset % totalDataLines) + totalDataLines) % totalDataLines` instead of using a local `normalizedOffset` variable. Ores.cs was already correct. Fixed to match canonical pattern.
+- **Bug 2 — `unknownItemDefinitions.Clear()` placement (Ores, Ingots, Components, Ammo, Cargo):** `Clear()` was called inside `UpdateContents()` instead of at the top of `Run()` before `LoadConfig()`. For modded items not in `MahDefinitions`, this caused `minAmount` to oscillate between the user's configured value and the hardcoded default (1000) on every Update10 tick — fill bar bounces between two values at 6Hz. Items.cs already had the correct placement. Fixed all five affected screens.
+- **Scan finding:** Weapons.cs has `unknownItemDefinitions` declared and searched but nothing is ever added to it — dead code, harmless, left as-is.
+- **Patch released to Workshop.** Waiting on reporter to confirm fix.
+
 ### 2026-03-18 (Session 2) — Image Converter v1.3 + Mipmap Quality Investigation
 
 #### Universal Image Converter v1.3
