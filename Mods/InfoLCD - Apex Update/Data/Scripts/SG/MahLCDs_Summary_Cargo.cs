@@ -407,8 +407,6 @@ namespace MahrianeIndustries.LCDInfo
                 return;
 
             MahDefinitions.LoadExternalItems();
-            // Clear unknown definitions at start of each run to prevent stale fallback definitions
-            unknownItemDefinitions.Clear();
             if (myTerminalBlock.CustomData.Length <= 0 || !myTerminalBlock.CustomData.Contains(CONFIG_SECTION_ID))
                 CreateConfig();
 
@@ -416,6 +414,16 @@ namespace MahrianeIndustries.LCDInfo
 
             UpdateInventories();
             UpdateContents();
+
+            // Auto-add newly discovered modded items to config
+            foreach (CargoItemDefinition def in unknownItemDefinitions)
+            {
+                if (!config.ContainsKey(CONFIG_SECTION_ID, def.subtypeId))
+                {
+                    CreateConfig();
+                    break;
+                }
+            }
 
             // Update scroll position if enabled
             if (toggleScroll)
@@ -502,6 +510,7 @@ namespace MahrianeIndustries.LCDInfo
         {
             try
             {
+                unknownItemDefinitions.Clear();
                 foreach (var bucket in categoryItems.Values)
                     bucket.Clear();
 

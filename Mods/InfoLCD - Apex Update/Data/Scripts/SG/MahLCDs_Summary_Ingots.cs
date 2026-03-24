@@ -168,11 +168,6 @@ namespace MahrianeIndustries.LCDInfo
                 sb.AppendLine($"{itemDefinition.subtypeId}={itemDefinition.minAmount}");
             }
 
-            foreach (CargoItemDefinition itemDefinition in unknownItemDefinitions)
-            {
-                sb.AppendLine($"{itemDefinition.subtypeId}={itemDefinition.minAmount}");
-            }
-
             sb.AppendLine();
 
             myTerminalBlock.CustomData = sb.ToString();
@@ -381,8 +376,6 @@ namespace MahrianeIndustries.LCDInfo
                 return;
 
             MahDefinitions.LoadExternalItems();
-            // Clear unknown definitions at start of each run to prevent stale fallback definitions
-            unknownItemDefinitions.Clear();
             if (myTerminalBlock.CustomData.Length <= 0 || !myTerminalBlock.CustomData.Contains(CONFIG_SECTION_ID))
                 CreateConfig();
 
@@ -390,6 +383,16 @@ namespace MahrianeIndustries.LCDInfo
 
             UpdateInventories();
             UpdateContents();
+
+            // Auto-add newly discovered modded items to config
+            foreach (CargoItemDefinition def in unknownItemDefinitions)
+            {
+                if (!config.ContainsKey(CONFIG_SECTION_ID, def.subtypeId))
+                {
+                    CreateConfig();
+                    break;
+                }
+            }
 
             // Update scroll offset if scrolling is enabled
             if (toggleScroll)
@@ -479,6 +482,7 @@ namespace MahrianeIndustries.LCDInfo
         {
             try
             {
+                unknownItemDefinitions.Clear();
                 cargo.Clear();
 
                 foreach (var inventory in inventories)
@@ -517,7 +521,7 @@ namespace MahrianeIndustries.LCDInfo
                                     itemDefinition.subtypeId = subtypeId;
                                     itemDefinition.displayName = subtypeId.Length >= 15 ? subtypeId.Substring(0, 15) : subtypeId;
                                     itemDefinition.volume = .1f;
-                                    itemDefinition.minAmount = 1000;
+                                    itemDefinition.minAmount = config.ContainsKey(CONFIG_SECTION_ID, subtypeId) ? config.Get(CONFIG_SECTION_ID, subtypeId).ToInt32() : 1000;
                                     itemDefinition.sortId = "misc"; // default category
 
                                     itemDefinitions.Add(itemDefinition);
