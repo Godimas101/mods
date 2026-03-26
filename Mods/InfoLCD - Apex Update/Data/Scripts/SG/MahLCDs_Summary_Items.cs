@@ -428,7 +428,8 @@ namespace MahrianeIndustries.LCDInfo
                 if (!config.ContainsKey(CONFIG_SECTION_ID, configKey) && !config.ContainsKey(CONFIG_SECTION_ID, def.subtypeId))
                 {
                     CreateConfig();
-                    config.TryParse(myTerminalBlock.CustomData, CONFIG_SECTION_ID, out _);
+                    MyIniParseResult r;
+                    config.TryParse(myTerminalBlock.CustomData, CONFIG_SECTION_ID, out r);
                     break;
                 }
             }
