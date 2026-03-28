@@ -671,6 +671,43 @@ All three files written from local workshop mod data + web research, then synced
 
 ---
 
+### 2026-03-28 — InfoLCD CustomData Blank Line Accumulation Bug + SG Core Asset Pass
+
+#### InfoLCD — CustomData Blank Line Accumulation (20,000+ Line Growth Bug)
+
+- **User report (KerballOne):** CustomData on cockpit blocks growing to 20,000+ lines over 30–40 minutes of play. Caused severe sim speed degradation.
+- **Root cause — section-stripping logic in 7 cargo screens (Ammo, Cargo, Components, Ingots, Items, Ores, Weapons):** `CreateConfig()` is called repeatedly (whenever a new unknown modded item is discovered). Each call strips its own section and preserves all others. The old code had two `else if` branches:
+  1. `else if (!inOurSection && addedOtherContent)` — preserved blank lines verbatim from other sections
+  2. `else if (!inOurSection && !string.IsNullOrWhiteSpace(trimmed))` — handled first non-empty line
+  Additionally, `if (addedOtherContent) sb.AppendLine()` added one blank line before each preserved section header as a separator. Net result: +1 blank line per section boundary per `CreateConfig()` call. Over 30–40 minutes = thousands of blank lines.
+- **Fix:** Collapsed the two branches into one — `else if (!inOurSection && !string.IsNullOrWhiteSpace(trimmed))`. Blank lines in other sections are now silently dropped; only the intentional single-line separator before each section header remains.
+- **Self-healing:** Once deployed, the next `CreateConfig()` call strips all accumulated blank lines from every other section in one pass.
+- **Side effect (cosmetic only):** When a cargo screen calls `CreateConfig()`, internal blank lines written by non-cargo screens (e.g., Items' own formatted config) are stripped from the preserved content. Those screens won't re-add them since their own `CreateConfig()` only runs on first setup. No functional impact — INI parser ignores blank lines.
+- **Cockpit test (30 min):** All 5 section boundaries stayed at exactly 1 blank line. Bug confirmed fixed.
+- **5 commits that were never pushed to GitHub:** Discovered and pushed during this session. This was why users weren't seeing earlier fix attempts.
+- **InfoLCD Apex Update re-published to Workshop** after cockpit test passed.
+
+#### SG Core Mod — DDS LCD Sprite Reprocessing
+
+- **34 DDS files reprocessed** across all SG Core mods (Core Mod, Power, Production, Survival, Vanilla Combat, Claude Engineers).
+- **Encoder:** BC7_UNORM_SRGB via texconv with `-sepalpha -if CUBIC -bc x` flags + full mipmap chain. All processed in-place.
+- **Aspect ratio handling:**
+  - Wide (1024×512): `SG-Banner-Wide`, `General_Apok_Wide`, `SG-Text-Name` → used "Wide LCD Panel · 2:1" preset
+  - Tall (512×1024): `SG-Banner-Tall`, `General_Apok_Tall` → used Custom 512×1024 path (`custom_max_size=512, custom_max_height=1024`)
+  - Square 512×512 (15 files): Custom 512×512 — maintained existing size
+  - Square 1024×1024 (9 files): "LCD Panel · 1:1" preset
+  - Non-pow2 800×800 flags (5 files: `flagCa/Ic/Nz/Uk/Us`): "LCD Panel · 1:1" preset → upscaled to 1024×1024 canvas (fills edge-to-edge, no letterboxing since source is square)
+- **Note:** `convert_image()` CLI only has `--size` (single value) for custom mode — no `--height`. Tall files require calling `convert_image()` directly from Python with `custom_max_size` and `custom_max_height` as separate args.
+
+#### SG Core Mod — XWM Audio Stereo → Mono Conversion
+
+- **13 XWM files converted to mono** in `Audio/MUS/`.
+- **Why mono required:** SE Sound Block sounds are 3D positional entities. The engine needs mono for spatial positioning. Stereo files play left-channel only in-game.
+- **Pipeline:** `ffmpeg -ac 1 -ar 44100 -sample_fmt s16` (decode to mono WAV) → `xWMAEncode` (encode back to XWM). Both tools from the SE ModSDK at `D:\SteamLibrary\steamapps\common\SpaceEngineersModSDK\Tools\`.
+- **Note:** The Universal Audio Converter GUI doesn't have a mono checkbox — conversion done via direct Python subprocess call bypassing the GUI.
+
+---
+
 ### 2026-03-14 — CustomData Section Header Standardization
 - **Change:** All CustomData section headers now follow consistent `; [ SCREENNAME - CATEGORY ]` pattern
 - **Scrolling headers:** Were mixed (`; [ SCROLLING OPTIONS ]`, `; [ SCREENNAME - SCROLLING OPTIONS ]`) — now all use `; [ SCREENNAME - SCROLLING OPTIONS ]`
