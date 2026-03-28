@@ -84,8 +84,8 @@ namespace MahrianeIndustries.LCDInfo
             ConfigHelpers.AppendShowSubgridsConfig(sb, surfaceData.showSubgrids);
             ConfigHelpers.AppendSubgridUpdateFrequencyConfig(sb, surfaceData.subgridUpdateFrequency);
             ConfigHelpers.AppendUseColorsConfig(sb, surfaceData.useColors);
+            ConfigHelpers.AppendScrollingConfig(sb, "AIRLOCKMONITOR", toggleScroll, reverseDirection, scrollSpeed, scrollLines, 0);
 
-            sb.AppendLine();
             sb.AppendLine("; [ AIRLOCKMONITOR - LAYOUT OPTIONS ]");
             sb.AppendLine($"TextSize={surfaceData.textSize}");
             sb.AppendLine($"ViewPortOffsetX={surfaceData.viewPortOffsetX}");
@@ -136,6 +136,15 @@ namespace MahrianeIndustries.LCDInfo
                     surfaceData.newLine = new Vector2(0, 30 * surfaceData.textSize);
 
                     MahUtillities.TryGetConfigBool(config, CONFIG_SECTION_ID, "UseColors", ref surfaceData.useColors, ref configError);
+
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ToggleScroll"))
+                        toggleScroll = config.Get(CONFIG_SECTION_ID, "ToggleScroll").ToBoolean(false);
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ReverseDirection"))
+                        reverseDirection = config.Get(CONFIG_SECTION_ID, "ReverseDirection").ToBoolean(false);
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ScrollSpeed"))
+                        scrollSpeed = Math.Max(1, config.Get(CONFIG_SECTION_ID, "ScrollSpeed").ToInt32(60));
+                    if (config.ContainsKey(CONFIG_SECTION_ID, "ScrollLines"))
+                        scrollLines = Math.Max(1, config.Get(CONFIG_SECTION_ID, "ScrollLines").ToInt32(1));
 
                     CreateExcludeIdsList();
 
@@ -197,6 +206,12 @@ namespace MahrianeIndustries.LCDInfo
         bool configError = false;
         bool isStation = false;
         Sandbox.ModAPI.Ingame.MyShipMass gridMass;
+        bool toggleScroll = false;
+        bool reverseDirection = false;
+        int scrollSpeed = 60;
+        int scrollLines = 1;
+        int scrollOffset = 0;
+        int ticksSinceLastScroll = 0;
 
         public LCDAirlockMonitorSummary(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -223,6 +238,24 @@ namespace MahrianeIndustries.LCDInfo
             LoadConfig();
 
             UpdateBlocks();
+
+            if (toggleScroll)
+            {
+                ticksSinceLastScroll += 10;
+                if (ticksSinceLastScroll >= scrollSpeed)
+                {
+                    ticksSinceLastScroll = 0;
+                    if (reverseDirection)
+                        scrollOffset -= scrollLines;
+                    else
+                        scrollOffset += scrollLines;
+                }
+            }
+            else
+            {
+                scrollOffset = 0;
+                ticksSinceLastScroll = 0;
+            }
 
             var myFrame = mySurface.DrawFrame();
             var myViewport = new RectangleF((mySurface.TextureSize - mySurface.SurfaceSize) / 2f, mySurface.SurfaceSize);
@@ -338,18 +371,32 @@ namespace MahrianeIndustries.LCDInfo
         void DrawAirlockMonitorDoorSprite (ref MySpriteDrawFrame frame, ref Vector2 position)
         {
             if (compactMode) return;
-
             if (doors.Count <= 0) return;
 
-            // Sort airlock doors alphabetically by custom name
             MahSorting.SortBlocksByName(doors);
 
             SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"Airlock Doors [{doors.Count}]", TextAlignment.LEFT, surfaceData.surface.ScriptForegroundColor);
             SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"State", TextAlignment.RIGHT, surfaceData.surface.ScriptForegroundColor);
             position += surfaceData.newLine;
 
-            foreach (var door in doors)
+            int totalDoors = doors.Count;
+
+            // Calculate how many door rows fit in remaining screen space
+            float remainingHeight = mySurface.SurfaceSize.Y - (position.Y - surfaceData.viewPortOffsetY);
+            int availableLines = Math.Max(1, (int)(remainingHeight / (30 * surfaceData.textSize)));
+
+            // Apply scroll offset with wraparound
+            int startIndex = 0;
+            if (toggleScroll && totalDoors > 0)
             {
+                int normalizedOffset = ((scrollOffset % totalDoors) + totalDoors) % totalDoors;
+                startIndex = normalizedOffset;
+            }
+
+            int drawn = 0;
+            for (int i = 0; i < totalDoors && drawn < availableLines; i++)
+            {
+                var door = doors[(startIndex + i) % totalDoors];
                 if (door == null) continue;
 
                 var state = door.IsWorking ? "  On " : "  Off ";
@@ -358,6 +405,7 @@ namespace MahrianeIndustries.LCDInfo
                 var status = door.Status.ToString();
                 SurfaceDrawer.WriteTextSprite(ref frame, position, surfaceData, $"{status}", TextAlignment.RIGHT, !surfaceData.useColors ? surfaceData.surface.ScriptForegroundColor : status.Contains("Closed") ? Color.GreenYellow : Color.Orange);
                 position += surfaceData.newLine;
+                drawn++;
             }
         }
     }

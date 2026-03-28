@@ -332,16 +332,24 @@ namespace MahrianeIndustries.LCDInfo
             try
             {
                 bool loaded = false;
-                // Try both root and Data/ locations (one may exist depending on packaging)
-                if (TryLoadExternalItems(ExternalItemsFileName))
+                string loadSource = null;
+                // 1. World storage takes priority — survives mod updates, safe for server admins to customize
+                if (TryLoadExternalItemsFromWorldStorage(ExternalItemsFileName))
+                {
                     loaded = true;
-                else if (TryLoadExternalItems("Data/" + ExternalItemsFileName))
+                    loadSource = "world storage";
+                }
+                // 2. Fall back to mod location (shipped defaults/examples)
+                else if (TryLoadExternalItems(ExternalItemsFileName) || TryLoadExternalItems("Data/" + ExternalItemsFileName))
+                {
                     loaded = true;
+                    loadSource = "mod location";
+                }
 
                 if (loaded)
                 {
                     externalItemsLoaded = true; // success
-                    MyLog.Default.WriteLine("MahDefinitions: ExternalItems loaded successfully.");
+                    MyLog.Default.WriteLine($"MahDefinitions: ExternalItems loaded successfully from {loadSource}.");
                 }
                 else if (externalItemsLoadAttempts >= ExternalItemsMaxAttempts)
                 {
@@ -376,111 +384,7 @@ namespace MahrianeIndustries.LCDInfo
                 using (var reader = MyAPIGateway.Utilities.ReadFileInModLocation(relativePath, selfModItem.Value))
                 {
                     if (reader == null) return false;
-
-                    string line;
-                    int lineNo = 0;
-                    string currentSection = null;
-                    string typeId = null, subtypeId = null, displayName = null, sortId = null;
-                    float volume = 0.1f;
-                    int minAmount = 0;
-                    
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        lineNo++;
-                        line = line.Trim();
-                        if (string.IsNullOrWhiteSpace(line)) continue;              // skip blank
-                        if (line.StartsWith("#")) continue;                        // skip comments
-                        if (line.StartsWith("//")) continue;                      // alternate comment
-
-                        // Check for INI-style section header [ItemName]
-                        if (line.StartsWith("[") && line.EndsWith("]"))
-                        {
-                            // Save previous item if we have one
-                            if (currentSection != null && !string.IsNullOrWhiteSpace(typeId) && !string.IsNullOrWhiteSpace(subtypeId))
-                            {
-                                AddOrUpdateCargoItem(typeId, subtypeId, displayName ?? subtypeId, volume, sortId, minAmount);
-                            }
-                            
-                            // Start new section
-                            currentSection = line.Substring(1, line.Length - 2).Trim();
-                            typeId = null;
-                            subtypeId = null;
-                            displayName = null;
-                            sortId = null;
-                            volume = 0.1f;
-                            minAmount = 0;
-                            continue;
-                        }
-
-                        // Check for key=value format (INI style)
-                        if (line.Contains("="))
-                        {
-                            var parts = line.Split(new char[] { '=' }, 2);
-                            if (parts.Length == 2)
-                            {
-                                string key = parts[0].Trim().ToLowerInvariant();
-                                string value = parts[1].Trim();
-                                
-                                switch (key)
-                                {
-                                    case "typeid":
-                                        typeId = value;
-                                        break;
-                                    case "subtypeid":
-                                        subtypeId = value;
-                                        break;
-                                    case "displayname":
-                                        displayName = value;
-                                        break;
-                                    case "volume":
-                                        float.TryParse(value, out volume);
-                                        break;
-                                    case "sortid":
-                                        sortId = value.ToLower();
-                                        break;
-                                    case "minamount":
-                                        int.TryParse(value, out minAmount);
-                                        break;
-                                }
-                                continue;
-                            }
-                        }
-
-                        // Fall back to CSV / semicolon format: typeId;subtypeId;displayName;volume;sortId;minAmount
-                        var csvParts = line.Split(new char[] { ';', ',' });
-                        if (csvParts.Length < 2)
-                        {
-                            MyLog.Default.WriteLine($"MahDefinitions: Skipping line {lineNo} (invalid format): {line}");
-                            continue;
-                        }
-
-                        typeId = csvParts[0].Trim();
-                        subtypeId = csvParts[1].Trim();
-                        if (string.IsNullOrWhiteSpace(typeId) || string.IsNullOrWhiteSpace(subtypeId))
-                            continue;
-
-                        displayName = csvParts.Length > 2 && !string.IsNullOrWhiteSpace(csvParts[2]) ? csvParts[2].Trim() : subtypeId;
-                        volume = 0.1f;
-                        if (csvParts.Length > 3)
-                            float.TryParse(csvParts[3].Trim(), out volume);
-                        sortId = csvParts.Length > 4 && !string.IsNullOrWhiteSpace(csvParts[4]) ? csvParts[4].Trim().ToLower() : "misc";
-                        minAmount = 0;
-                        if (csvParts.Length > 5)
-                            int.TryParse(csvParts[5].Trim(), out minAmount);
-
-                        // Add CSV item immediately
-                        AddOrUpdateCargoItem(typeId, subtypeId, displayName, volume, sortId, minAmount);
-                        
-                        // Reset for next CSV line
-                        typeId = null;
-                        subtypeId = null;
-                    }
-                    
-                    // Save final INI-style item if we have one
-                    if (currentSection != null && !string.IsNullOrWhiteSpace(typeId) && !string.IsNullOrWhiteSpace(subtypeId))
-                    {
-                        AddOrUpdateCargoItem(typeId, subtypeId, displayName ?? subtypeId, volume, sortId, minAmount);
-                    }
+                    ParseExternalItemsReader(reader);
                 }
 
                 return true;
@@ -490,6 +394,103 @@ namespace MahrianeIndustries.LCDInfo
                 MyLog.Default.WriteLine($"MahDefinitions.TryLoadExternalItems('{relativePath}') Exception: {e}");
                 return false;
             }
+        }
+
+        static bool TryLoadExternalItemsFromWorldStorage(string fileName)
+        {
+            try
+            {
+                if (MyAPIGateway.Utilities == null) return false;
+                if (!MyAPIGateway.Utilities.FileExistsInWorldStorage(fileName, typeof(MahDefinitions)))
+                    return false;
+                using (var reader = MyAPIGateway.Utilities.ReadFileInWorldStorage(fileName, typeof(MahDefinitions)))
+                {
+                    if (reader == null) return false;
+                    ParseExternalItemsReader(reader);
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.WriteLine($"MahDefinitions.TryLoadExternalItemsFromWorldStorage('{fileName}') Exception: {e}");
+                return false;
+            }
+        }
+
+        static void ParseExternalItemsReader(System.IO.TextReader reader)
+        {
+            string line;
+            int lineNo = 0;
+            string currentSection = null;
+            string typeId = null, subtypeId = null, displayName = null, sortId = null;
+            float volume = 0.1f;
+            int minAmount = 0;
+
+            while ((line = reader.ReadLine()) != null)
+            {
+                lineNo++;
+                line = line.Trim();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (line.StartsWith("#")) continue;
+                if (line.StartsWith("//")) continue;
+
+                if (line.StartsWith("[") && line.EndsWith("]"))
+                {
+                    if (currentSection != null && !string.IsNullOrWhiteSpace(typeId) && !string.IsNullOrWhiteSpace(subtypeId))
+                        AddOrUpdateCargoItem(typeId, subtypeId, displayName ?? subtypeId, volume, sortId, minAmount);
+
+                    currentSection = line.Substring(1, line.Length - 2).Trim();
+                    typeId = null; subtypeId = null; displayName = null; sortId = null;
+                    volume = 0.1f; minAmount = 0;
+                    continue;
+                }
+
+                if (line.Contains("="))
+                {
+                    var parts = line.Split(new char[] { '=' }, 2);
+                    if (parts.Length == 2)
+                    {
+                        string key = parts[0].Trim().ToLowerInvariant();
+                        string value = parts[1].Trim();
+                        switch (key)
+                        {
+                            case "typeid":      typeId = value; break;
+                            case "subtypeid":   subtypeId = value; break;
+                            case "displayname": displayName = value; break;
+                            case "volume":      float.TryParse(value, out volume); break;
+                            case "sortid":      sortId = value.ToLower(); break;
+                            case "minamount":   int.TryParse(value, out minAmount); break;
+                        }
+                        continue;
+                    }
+                }
+
+                // CSV / semicolon fallback: typeId;subtypeId;displayName;volume;sortId;minAmount
+                var csvParts = line.Split(new char[] { ';', ',' });
+                if (csvParts.Length < 2)
+                {
+                    MyLog.Default.WriteLine($"MahDefinitions: Skipping line {lineNo} (invalid format): {line}");
+                    continue;
+                }
+
+                typeId = csvParts[0].Trim();
+                subtypeId = csvParts[1].Trim();
+                if (string.IsNullOrWhiteSpace(typeId) || string.IsNullOrWhiteSpace(subtypeId))
+                    continue;
+
+                displayName = csvParts.Length > 2 && !string.IsNullOrWhiteSpace(csvParts[2]) ? csvParts[2].Trim() : subtypeId;
+                volume = 0.1f;
+                if (csvParts.Length > 3) float.TryParse(csvParts[3].Trim(), out volume);
+                sortId = csvParts.Length > 4 && !string.IsNullOrWhiteSpace(csvParts[4]) ? csvParts[4].Trim().ToLower() : "misc";
+                minAmount = 0;
+                if (csvParts.Length > 5) int.TryParse(csvParts[5].Trim(), out minAmount);
+
+                AddOrUpdateCargoItem(typeId, subtypeId, displayName, volume, sortId, minAmount);
+                typeId = null; subtypeId = null;
+            }
+
+            if (currentSection != null && !string.IsNullOrWhiteSpace(typeId) && !string.IsNullOrWhiteSpace(subtypeId))
+                AddOrUpdateCargoItem(typeId, subtypeId, displayName ?? subtypeId, volume, sortId, minAmount);
         }
 
         static void AddOrUpdateCargoItem(string typeId, string subtypeId, string displayName, float volume, string sortId, int minAmount)
