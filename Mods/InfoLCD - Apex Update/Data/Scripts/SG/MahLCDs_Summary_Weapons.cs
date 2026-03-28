@@ -300,6 +300,7 @@ namespace MahrianeIndustries.LCDInfo
         string gridId = "Unknown grid";
         int subgridScanTick = 0;
         bool configError = false;
+        bool needsCleanup = true;
         bool compactMode = false;
         bool isStation = false;
         bool toggleScroll = false;
@@ -333,6 +334,7 @@ namespace MahrianeIndustries.LCDInfo
             MahDefinitions.LoadExternalItems();
             if (myTerminalBlock.CustomData.Length <= 0 || !myTerminalBlock.CustomData.Contains(CONFIG_SECTION_ID))
                 CreateConfig();
+            else if (needsCleanup) { needsCleanup = false; ConfigHelpers.StripExcessBlankLines(myTerminalBlock); }
 
             LoadConfig();
 

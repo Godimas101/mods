@@ -1652,5 +1652,14 @@ namespace MahrianeIndustries.LCDInfo
                 sb.AppendLine();
             }
         }
+
+        public static void StripExcessBlankLines(IMyTerminalBlock block)
+        {
+            string cd = block.CustomData;
+            if (!cd.Contains("\n\n\n")) return;
+            while (cd.Contains("\n\n\n"))
+                cd = cd.Replace("\n\n\n", "\n\n");
+            block.CustomData = cd;
+        }
     }
 }
