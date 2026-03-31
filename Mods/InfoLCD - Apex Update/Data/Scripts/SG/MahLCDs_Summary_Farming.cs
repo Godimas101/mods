@@ -58,6 +58,7 @@ namespace MahrianeIndustries.LCDInfo
         string searchId = "*";
         List<string> excludeIds = new List<string>();
         int subgridScanTick = 0;
+        bool configError = false;
         bool compactMode = false;
         bool toggleScroll = false;
         bool reverseDirection = false;
@@ -136,6 +137,7 @@ namespace MahrianeIndustries.LCDInfo
             }
 
             UpdateBlocks();
+            UpdateResourceBars();
             Draw();
         }
 
@@ -202,6 +204,7 @@ namespace MahrianeIndustries.LCDInfo
         {
             try
             {
+                configError = false;
                 MyIniParseResult result;
                 TryCreateSurfaceData();
                 if (config.TryParse(myTerminalBlock.CustomData, CONFIG_SECTION_ID, out result))
@@ -262,6 +265,7 @@ namespace MahrianeIndustries.LCDInfo
                 else
                 {
                     MyLog.Default.WriteLine("MahrianeIndustries.LCDInfo.LCDFarmingSummaryInfo: Config syntax error: " + result.ToString());
+                    configError = true;
                 }
             }
             catch (Exception e)
@@ -277,13 +281,16 @@ namespace MahrianeIndustries.LCDInfo
                 var myCubeGrid = myTerminalBlock.CubeGrid as MyCubeGrid;
                 if (myCubeGrid == null) return;
 
-                // Determine if we should scan subgrids on this tick (always uses showSubgrids=true)
+                // Determine if we should scan subgrids on this tick
                 bool scanSubgrids = false;
-                subgridScanTick++;
-                if (subgridScanTick >= surfaceData.subgridUpdateFrequency / 10)  // Divide by 10 for Update10 timing
+                if (surfaceData.showSubgrids)
                 {
-                    subgridScanTick = 0;
-                    scanSubgrids = true;
+                    subgridScanTick++;
+                    if (subgridScanTick >= surfaceData.subgridUpdateFrequency / 10)  // Divide by 10 for Update10 timing
+                    {
+                        subgridScanTick = 0;
+                        scanSubgrids = true;
+                    }
                 }
 
                 // Always scan main grid blocks (instant updates)
@@ -447,12 +454,17 @@ namespace MahrianeIndustries.LCDInfo
                 var viewport = new RectangleF((mySurface.TextureSize - mySurface.SurfaceSize) / 2f, mySurface.SurfaceSize);
                 var position = new Vector2(surfaceData.viewPortOffsetX, surfaceData.viewPortOffsetY) + viewport.Position;
 
+                if (configError)
+                {
+                    SurfaceDrawer.DrawErrorSprite(ref frame, surfaceData, "<< Config error. Please Delete CustomData >>", Color.Orange);
+                    frame.Dispose();
+                    return;
+                }
+
                 if (surfaceData.showHeader)
                 {
                     SurfaceDrawer.DrawHeader(ref frame, ref position, surfaceData, "Farming", "");
                 }
-
-                UpdateResourceBars();
 
                 if (compactMode)
                 {
