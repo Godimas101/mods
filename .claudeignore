@@ -1,0 +1,21 @@
+# Binary model files
+**/*.mwm
+**/*.hkt
+**/*.fbx
+
+# Textures
+**/*.dds
+**/*.png
+**/*.tga
+**/*.jpg
+
+# Audio
+**/*.xwm
+**/*.wav
+**/*.ogg
+
+# Compiled output
+**/*.dll
+**/*.pdb
+**/bin/
+**/obj/
