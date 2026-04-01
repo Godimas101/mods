@@ -745,6 +745,39 @@ All three files written from local workshop mod data + web research, then synced
 
 ---
 
+### 2026-03-31 — InfoLCD Farming Screen Full Architecture Refactor + Subgrid Data Fix
+
+#### Farming Screen — Architecture Refactor (GitHub Issue #4)
+
+Four structural issues vs GasProduction reference — all resolved in commit e1c56be:
+
+1. **`configError` field missing:** Added `bool configError = false;` field. `LoadConfig()` now resets it to `false` at entry, sets `true` in the parse-failure else branch. `Draw()` shows error sprite and early-returns when `configError` is true — consistent with all other screens.
+2. **`subgridScanTick` running unconditionally:** Was incrementing every `Run()` call regardless of `showSubgrids` setting. Moved inside `if (surfaceData.showSubgrids)` block so it only increments (and the subgrid scan only fires) when subgrid display is actually enabled.
+3. **`UpdateResourceBars()` called from `Draw()`:** Was executing every rendered frame (can differ from tick rate). Moved to `Run()`, called between `UpdateBlocks()` and `Draw()` — now runs exactly once per 10-tick cycle.
+4. **Config error sprite:** Added to `Draw()` — checks `configError` before drawing anything else, renders orange error sprite and returns early.
+
+#### Farming Screen — Full TryParse for Strict Config Error Detection
+
+- **Problem:** Original `LoadConfig()` used section-scoped `TryParse(data, SECTION_ID, out result)`. If CustomData had malformed content BEFORE a valid section (e.g., orphaned `[` from a partial paste), the scoped parse would find the valid section, return `true`, and silently ignore the corruption — no configError triggered.
+- **Other screens (e.g., AirlockMonitor):** Use full `TryParse(data, out result)` — any malformed content anywhere in CustomData causes parse failure → configError = true.
+- **Fix:** Changed Farming's `LoadConfig()` to use the full overload `config.TryParse(myTerminalBlock.CustomData, out result)` — commit ade2dc7.
+- **Key distinction:** Section-scoped TryParse is lenient (ignores content outside the target section). Full TryParse is strict (fails on any malformed INI anywhere in the string).
+
+#### Farming Screen — Subgrid Block Data Staleness Fix
+
+- **Problem:** When `ShowSubgrids=True`, subgrid farm plots appeared in the list (name shown) but all data (growth%, crop name, hydration%, health%) displayed as zero or empty.
+- **Root cause:** `plot.DetailedInfo` is a server-synced string. For blocks the client hasn't recently opened in the terminal UI, this string is never populated — empty string returns from the server. Main-grid blocks work because they're in the active terminal group. Subgrid blocks are not.
+- **Fix:** Added `farmLogic.GetDetailedInfoWithoutRequiredInput()` call in `TryParseFarmDetails()` — commit f8505ba. This method calls the block's component logic directly (not a network-synced cache) and always returns current data. Used as primary info source; falls back to `plot.DetailedInfo` if component method returns empty.
+- **API note:** `Sandbox.ModAPI.IMyFarmPlotLogic` inherits from `Sandbox.ModAPI.Ingame.IMyFarmPlotLogic`, giving access to `IsPlantPlanted`, `IsAlive`, `IsPlantFullyGrown`, `IsHarvestable`, `OutputItem`, `OutputItemAmount`, `AmountOfSeedsRequired`, AND `GetDetailedInfoWithoutRequiredInput()` — all accessible from the compiled script context.
+
+#### Debugging Note — Dual Mod Loading Trap
+
+- User reported subgrid block still visible after applying `showSubgrids=False` fix. Investigation confirmed the code was correct.
+- **Actual cause:** User was loading both the AppData local version (with fix) AND the Steam Workshop version (without fix) simultaneously. The Workshop DLL overrode the local one.
+- **Lesson:** When testing local mod fixes, verify only one version is active. Workshop mods always override local AppData mods with the same mod ID. Check the game log for `Id = Steam:0` (local) vs `Id = Steam:XXXXXXXXX` (workshop) to confirm which is loaded.
+
+---
+
 ### 2026-03-14 — CustomData Section Header Standardization
 - **Change:** All CustomData section headers now follow consistent `; [ SCREENNAME - CATEGORY ]` pattern
 - **Scrolling headers:** Were mixed (`; [ SCROLLING OPTIONS ]`, `; [ SCREENNAME - SCROLLING OPTIONS ]`) — now all use `; [ SCREENNAME - SCROLLING OPTIONS ]`
