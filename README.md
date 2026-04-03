@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rounded&height=170&color=0:0B1021,45:0F766E,100:2563EB&text=🛸%20Space%20Engineers%20Mods&fontColor=ffffff&fontAlignY=35&fontSize=30&desc=InfoLCD,%20server%20tweaks,%20and%20compatibility%20patches&descAlignY=57&descSize=18" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=170&color=0:06121E,45:0F766E,100:2563EB&text=🛸%20Space%20Engineers%20Mods&fontColor=ffffff&fontAlignY=35&fontSize=30&desc=Mods,%20scripts,%20and%20things%20you%20didn't%20know%20you%20needed&descAlignY=57&descSize=18" />
 </p>
 
-> **"LCD scripts, server tweaks, and compatibility patches for engineers who like their bases slightly overengineered."**
+> **"Mods, scripts, and compatibility patches for engineers who like their bases slightly overengineered."**
 
 This repo is the main home for my Space Engineers mod collection, now split out as the standalone `se-mods` repo. The flagship project is **InfoLCD**, backed up by server-focused balance work, compatibility patches, and a handful of odd little utility mods.
 
@@ -67,7 +67,6 @@ Balance and compatibility patches for third-party mods used on Sturmgrenadier se
 | Mod | Description |
 |-----|-------------|
 | Not Just For Looks | Gives DLC cosmetic blocks actual useful stats |
-| Universal Image Converter | Workshop LCD image pack — separate from the standalone tool repo of the same name |
 
 ---
 
