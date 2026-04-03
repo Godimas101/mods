@@ -1,4 +1,6 @@
-# 🛸 Space Engineers Mods
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rounded&height=170&color=0:0B1021,45:0F766E,100:2563EB&text=🛸%20Space%20Engineers%20Mods&fontColor=ffffff&fontAlignY=35&fontSize=30&desc=InfoLCD,%20server%20tweaks,%20and%20compatibility%20patches&descAlignY=57&descSize=18" />
+</p>
 
 > **"LCD scripts, server tweaks, and compatibility patches for engineers who like their bases slightly overengineered."**
 
