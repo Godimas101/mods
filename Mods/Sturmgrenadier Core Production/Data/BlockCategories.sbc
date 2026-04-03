@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <CategoryClasses>
+
+        <!--
+            Sturmgrenadier Core Production - Block Categories
+            Adds third-party production mod blocks into vanilla G-menu categories.
+            Workshop mods covered:
+              3369254538 - ModCubeBlocks Refinery x10 [SG Adjuster] (ModCubeBlockLargeRefineryx10)
+              3369254384 - ModCubeBlocks Upgrade Module [SG Adjuster] (Productivity/Effectiveness/Energy x2/4/8/16)
+        -->
+
+        <!-- Modded refinery and upgrade modules → vanilla Production category -->
+        <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+            <Id>
+                <TypeId>GuiBlockCategoryDefinition</TypeId>
+                <SubtypeId/>
+            </Id>
+            <DisplayName>DisplayName_Category_Production</DisplayName>
+            <Name>Section1_Position3_Production</Name>
+            <ItemIds>
+                <!-- ModCubeBlocks Refinery x10 -->
+                <string>Refinery/ModCubeBlockLargeRefineryx10</string>
+
+                <!-- ModCubeBlocks Productivity Modules -->
+                <string>UpgradeModule/ModCubeBlockProductivityModuleLargex2</string>
+                <string>UpgradeModule/ModCubeBlockProductivityModuleLargex4</string>
+                <string>UpgradeModule/ModCubeBlockProductivityModuleLargex8</string>
+                <string>UpgradeModule/ModCubeBlockProductivityModuleLargex16</string>
+
+                <!-- ModCubeBlocks Effectiveness Modules -->
+                <string>UpgradeModule/ModCubeBlockEffectivenessModuleLargex2</string>
+                <string>UpgradeModule/ModCubeBlockEffectivenessModuleLargex4</string>
+                <string>UpgradeModule/ModCubeBlockEffectivenessModuleLargex8</string>
+                <string>UpgradeModule/ModCubeBlockEffectivenessModuleLargex16</string>
+
+                <!-- ModCubeBlocks Energy Modules -->
+                <string>UpgradeModule/ModCubeBlockEnergyModuleLargex2</string>
+                <string>UpgradeModule/ModCubeBlockEnergyModuleLargex4</string>
+                <string>UpgradeModule/ModCubeBlockEnergyModuleLargex8</string>
+                <string>UpgradeModule/ModCubeBlockEnergyModuleLargex16</string>
+            </ItemIds>
+        </Category>
+
+    </CategoryClasses>
+</Definitions>

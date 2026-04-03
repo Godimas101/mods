@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <BlockVariantGroups>
+
+        <!--
+            Sturmgrenadier Core Production - Block Variant Groups
+            Extends vanilla production and module scroll groups with modded blocks.
+            BVGs are non-additive — all vanilla blocks must be included or they disappear.
+            DisplayName MUST use a vanilla localization key (DisplayName_*) or DisplayNameEnum is null → crash.
+
+            Mods required:
+              3369254538 - ModCubeBlocks Refinery x10 [SG Adjuster]
+              3369254384 - ModCubeBlocks Upgrade Module [SG Adjuster]
+        -->
+
+        <!-- Extends the vanilla refinery scroll group with the modded x10 refinery -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="RefineryGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\refinery.dds</Icon>
+            <DisplayName>DisplayName_Block_Refinery</DisplayName>
+            <Description>Description_Refinery</Description>
+            <Blocks>
+                <!-- Vanilla refineries (must be preserved) -->
+                <Block Type="MyObjectBuilder_Refinery" Subtype="LargeRefinery" />
+                <Block Type="MyObjectBuilder_Refinery" Subtype="LargeRefineryIndustrial" />
+                <Block Type="MyObjectBuilder_Refinery" Subtype="Blast Furnace" />
+                <!-- ModCubeBlocks Refinery x10 -->
+                <Block Type="MyObjectBuilder_Refinery" Subtype="ModCubeBlockLargeRefineryx10" />
+            </Blocks>
+        </BlockVariantGroup>
+
+        <!-- Productivity modules: vanilla base → modded tiers x2/4/8/16 -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ProductivityModuleGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\UpgradeProductivity.dds</Icon>
+            <DisplayName>DisplayName_Block_ProductivityModule</DisplayName>
+            <Description>Description_ProductivityModule</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="LargeProductivityModule" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockProductivityModuleLargex2" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockProductivityModuleLargex4" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockProductivityModuleLargex8" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockProductivityModuleLargex16" />
+            </Blocks>
+        </BlockVariantGroup>
+
+        <!-- Effectiveness modules: vanilla base → modded tiers x2/4/8/16 -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="EffectivenessModuleGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\UpgradeEffectiveness.dds</Icon>
+            <DisplayName>DisplayName_Block_EffectivenessModule</DisplayName>
+            <Description>Description_EffectivenessModule</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEffectivenessModule" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEffectivenessModuleLargex2" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEffectivenessModuleLargex4" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEffectivenessModuleLargex8" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEffectivenessModuleLargex16" />
+            </Blocks>
+        </BlockVariantGroup>
+
+        <!-- Energy modules: vanilla base → modded tiers x2/4/8/16 -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="EnergyModuleGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\UpgradeEnergy.dds</Icon>
+            <DisplayName>DisplayName_Block_PowerEfficiencyModule</DisplayName>
+            <Description>Description_PowerEfficiencyModule</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnergyModule" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEnergyModuleLargex2" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEnergyModuleLargex4" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEnergyModuleLargex8" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="ModCubeBlockEnergyModuleLargex16" />
+            </Blocks>
+        </BlockVariantGroup>
+
+    </BlockVariantGroups>
+</Definitions>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <CategoryClasses>
+
+        <!--
+            Sturmgrenadier Core Survival - Block Categories
+            Adds third-party survival mod blocks into vanilla G-menu categories.
+            Workshop mods covered:
+              3562249355 - Vertical Farm Plot (VFP) (VerticalFarmPlot, InsetFarmPlot)
+              2294559988 - Wardrobe and Kit Locker (Wardrobe, SG_Wardrobe, Damaged_Wardrobe, SG_Damaged_Wardrobe,
+                           Kit_Locker, SG_Kit_Locker, Damaged_Kit_Locker, SG_Damaged_Kit_Locker)
+              3566504208 - JS Apex Things - Laboratories (JSLabLarge, JSLabEquipment, JSLargeBlockLabDeskMicroscope)
+        -->
+
+        <!-- Modded farm plots and lab assemblers → vanilla Production category -->
+        <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+            <Id>
+                <TypeId>GuiBlockCategoryDefinition</TypeId>
+                <SubtypeId>Production</SubtypeId>
+            </Id>
+            <DisplayName>DisplayName_Category_Production</DisplayName>
+            <Name>Section1_Position3_Production</Name>
+            <ItemIds>
+                <!-- Vertical Farm Plot -->
+                <string>FunctionalBlock/VerticalFarmPlot</string>
+                <string>FunctionalBlock/InsetFarmPlot</string>
+                <!-- JS Apex Laboratories -->
+                <string>Assembler/JSLabLarge</string>
+                <string>Assembler/JSLabEquipment</string>
+                <string>Assembler/JSLargeBlockLabDeskMicroscope</string>
+            </ItemIds>
+        </Category>
+
+        <!-- Wardrobe and Kit Locker blocks → vanilla Decorative category -->
+        <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+            <Id>
+                <TypeId>GuiBlockCategoryDefinition</TypeId>
+                <SubtypeId>Decorative</SubtypeId>
+            </Id>
+            <DisplayName>DisplayName_Category_Decorative</DisplayName>
+            <Name>Section1_Position3_Decorative</Name>
+            <ItemIds>
+                <!-- Wardrobe and Kit Locker (large grid) -->
+                <string>MedicalRoom/Wardrobe</string>
+                <string>CubeBlock/Damaged_Wardrobe</string>
+                <string>CubeBlock/Kit_Locker</string>
+                <string>CubeBlock/Damaged_Kit_Locker</string>
+                <!-- Wardrobe and Kit Locker (small grid) -->
+                <string>MedicalRoom/SG_Wardrobe</string>
+                <string>CubeBlock/SG_Damaged_Wardrobe</string>
+                <string>CubeBlock/SG_Kit_Locker</string>
+                <string>CubeBlock/SG_Damaged_Kit_Locker</string>
+            </ItemIds>
+        </Category>
+
+    </CategoryClasses>
+</Definitions>

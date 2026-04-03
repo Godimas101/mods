@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <BlockVariantGroups>
+
+        <!--
+            Sturmgrenadier Core Survival - Block Variant Groups
+            Extends vanilla scroll groups with modded blocks.
+            BVGs are non-additive — all vanilla blocks must be included or they disappear.
+            DisplayName MUST use a vanilla localization key (DisplayName_*) or DisplayNameEnum is null → crash.
+
+            Mods required:
+              3562249355 - Vertical Farm Plot (VFP)
+              2294559988 - Wardrobe and Kit Locker
+              3566504208 - JS Apex Things - Laboratories
+        -->
+
+        <!-- New farm plot scroll group: vanilla root → modded shape variants -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="FarmPlotGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\FarmPlot.dds</Icon>
+            <DisplayName>DisplayName_Block_FarmPlot</DisplayName>
+            <Description>Description_FarmPlot</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_FunctionalBlock" Subtype="LargeBlockFarmPlot" />
+                <Block Type="MyObjectBuilder_FunctionalBlock" Subtype="VerticalFarmPlot" />
+                <Block Type="MyObjectBuilder_FunctionalBlock" Subtype="InsetFarmPlot" />
+            </Blocks>
+        </BlockVariantGroup>
+
+        <!-- Extends the vanilla lockers/armory scroll group with wardrobes and kit lockers -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="LockersGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\WeaponRack.dds</Icon>
+            <DisplayName>DisplayName_Block_WeaponRack</DisplayName>
+            <Description>Description_WeaponRack</Description>
+            <Blocks>
+                <!-- Vanilla locker/armory blocks (must be preserved) -->
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="LargeBlockLockerRoom" />
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="LargeBlockLockerRoomCorner" />
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="LargeBlockLockers" />
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="LargeBlockWeaponRack" />
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="SmallBlockWeaponRack" />
+                <Block Type="MyObjectBuilder_TerminalBlock" Subtype="SmallBlockFirstAidCabinet" />
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="LargeBlockInsetBookshelf" />
+                <Block Type="MyObjectBuilder_CargoContainer" Subtype="LargeBlockLabCabinet" />
+                <Block Type="MyObjectBuilder_TerminalBlock" Subtype="LargeFreezer" />
+                <!-- Wardrobe and Kit Locker (large grid) -->
+                <Block Type="MyObjectBuilder_MedicalRoom" Subtype="Wardrobe" />
+                <Block Type="MyObjectBuilder_CubeBlock" Subtype="Damaged_Wardrobe" />
+                <Block Type="MyObjectBuilder_CubeBlock" Subtype="Kit_Locker" />
+                <Block Type="MyObjectBuilder_CubeBlock" Subtype="Damaged_Kit_Locker" />
+                <!-- Wardrobe and Kit Locker (small grid) -->
+                <Block Type="MyObjectBuilder_MedicalRoom" Subtype="SG_Wardrobe" />
+                <Block Type="MyObjectBuilder_CubeBlock" Subtype="SG_Damaged_Wardrobe" />
+                <Block Type="MyObjectBuilder_CubeBlock" Subtype="SG_Kit_Locker" />
+                <Block Type="MyObjectBuilder_CubeBlock" Subtype="SG_Damaged_Kit_Locker" />
+            </Blocks>
+        </BlockVariantGroup>
+
+        <!-- Extends the vanilla assembler scroll group with JS Apex lab assemblers -->
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="AssemblerGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\assembler.dds</Icon>
+            <DisplayName>DisplayName_Block_Assembler</DisplayName>
+            <Description>Description_Assembler</Description>
+            <Blocks>
+                <!-- Vanilla assemblers (must be preserved) -->
+                <Block Type="MyObjectBuilder_Assembler" Subtype="LargeAssembler" />
+                <Block Type="MyObjectBuilder_Assembler" Subtype="LargeAssemblerIndustrial" />
+                <Block Type="MyObjectBuilder_Assembler" Subtype="BasicAssembler" />
+                <!-- JS Apex Laboratories -->
+                <Block Type="MyObjectBuilder_Assembler" Subtype="JSLabLarge" />
+                <Block Type="MyObjectBuilder_Assembler" Subtype="JSLabEquipment" />
+                <Block Type="MyObjectBuilder_Assembler" Subtype="JSLargeBlockLabDeskMicroscope" />
+            </Blocks>
+        </BlockVariantGroup>
+
+    </BlockVariantGroups>
+</Definitions>
